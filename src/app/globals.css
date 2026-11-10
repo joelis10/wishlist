@@ -1,0 +1,157 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg: 250 247 242;
+  --surface: 255 255 255;
+  --raised: 244 239 232;
+  --ink: 36 30 26;
+  --muted: 116 104 94;
+  --line: 229 221 211;
+  --accent: 171 39 74;
+  --accent-ink: 255 255 255;
+  --danger: 178 38 30;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: 23 20 18;
+    --surface: 32 28 25;
+    --raised: 44 38 34;
+    --ink: 241 235 229;
+    --muted: 168 155 145;
+    --line: 62 54 48;
+    --accent: 226 96 128;
+    --accent-ink: 34 18 23;
+    --danger: 238 115 104;
+  }
+}
+
+@layer base {
+  html {
+    color-scheme: light dark;
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply bg-bg text-ink antialiased;
+    font-family:
+      ui-sans-serif,
+      system-ui,
+      -apple-system,
+      BlinkMacSystemFont,
+      "Segoe UI",
+      sans-serif;
+    min-height: 100dvh;
+  }
+
+  h1,
+  h2,
+  h3 {
+    font-family: ui-serif, Georgia, Cambria, "Times New Roman", serif;
+    font-weight: 500;
+    letter-spacing: -0.02em;
+  }
+
+  ::selection {
+    background: rgb(var(--accent) / 0.22);
+  }
+
+  :focus-visible {
+    outline: 2px solid rgb(var(--accent) / 0.7);
+    outline-offset: 2px;
+  }
+
+  dialog::backdrop {
+    background: rgb(20 15 12 / 0.48);
+    backdrop-filter: blur(3px);
+  }
+
+  dialog[open] {
+    animation: modal-in 160ms ease-out;
+  }
+
+  @keyframes modal-in {
+    from {
+      opacity: 0;
+      transform: translateY(6px) scale(0.99);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
+}
+
+@layer components {
+  .container-page {
+    @apply mx-auto w-full max-w-page px-4 sm:px-6;
+  }
+
+  .btn {
+    @apply inline-flex min-h-9 items-center justify-center gap-1.5 rounded-full px-4 py-2 text-sm font-medium transition
+      disabled:cursor-not-allowed disabled:opacity-50;
+  }
+
+  .btn-sm {
+    @apply min-h-8 px-3 py-1.5 text-[13px];
+  }
+
+  .btn-primary {
+    @apply bg-accent text-accent-ink hover:brightness-110 active:brightness-95;
+  }
+
+  .btn-secondary {
+    @apply border border-line bg-surface text-ink hover:bg-raised;
+  }
+
+  .btn-ghost {
+    @apply text-muted hover:bg-raised hover:text-ink;
+  }
+
+  .btn-danger {
+    @apply bg-danger text-white hover:brightness-110;
+  }
+
+  .input {
+    @apply w-full rounded-xl border border-line bg-surface px-3.5 py-2.5 text-sm text-ink outline-none
+      placeholder:text-muted/70 focus:border-accent/60 focus:ring-4 focus:ring-accent/10;
+  }
+
+  .label {
+    @apply mb-1.5 block text-[13px] font-medium text-muted;
+  }
+
+  .card {
+    @apply rounded-2xl border border-line bg-surface shadow-soft;
+  }
+
+  .chip {
+    @apply inline-flex items-center gap-1 rounded-full border border-line bg-surface px-2.5 py-1 text-xs
+      font-medium text-muted;
+  }
+
+  .surface-input {
+    @apply rounded-xl border border-line bg-surface;
+  }
+
+  .menu-link {
+    @apply rounded-xl px-3 py-2 text-sm text-muted transition hover:bg-raised hover:text-ink;
+  }
+
+  .prose-quiet {
+    @apply whitespace-pre-line break-words leading-relaxed text-muted;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
