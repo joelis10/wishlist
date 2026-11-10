@@ -3,14 +3,14 @@ import type { CheerioAPI } from "cheerio";
 import { decodeHTML } from "entities";
 import { formatPrice } from "../money";
 import { siteDomain } from "../validation";
-import type { PriceCandidate, ScrapeCandidates } from "./types";
+import type { ImageCandidate, PriceCandidate, ScrapeCandidates } from "./types";
 
 type RawPrice = { cents: number; currency: string };
 
 type Collected = {
   titles: string[];
   descriptions: string[];
-  images: string[];
+  images: ImageCandidate[];
   prices: RawPrice[];
   availability: boolean | null;
   currency: string | null;
@@ -65,7 +65,37 @@ function addDescription(collected: Collected, value: string): void {
   if (collected.descriptions.length < DESCRIPTION_LIMIT) collected.descriptions.push(cleaned);
 }
 
-function addImage(collected: Collected, value: unknown, baseUrl: string): void {
+function cleanImageTitle(value: unknown): string | null {
+  if (typeof value !== "string") return null;
+  const cleaned = cleanInline(value, 200);
+  if (cleaned.length < 2) return null;
+  if (/^(image|photo|picture|product image|thumbnail)$/i.test(cleaned)) return null;
+  return cleaned;
+}
+
+function imageTitleFromUrl(raw: string): string | null {
+  try {
+    const url = new URL(raw);
+    const filename = decodeURIComponent(url.pathname.split("/").pop() || "");
+    const cleaned = filename
+      .replace(/\.[a-z0-9]{2,5}$/i, "")
+      .replace(/[-_+]+/g, " ")
+      .replace(/\s+/g, " ")
+      .trim();
+    if (cleaned.length < 3) return null;
+    if (/^[a-f0-9]{12,}$/i.test(cleaned)) return null;
+    return cleanImageTitle(cleaned);
+  } catch {
+    return null;
+  }
+}
+
+function addImage(
+  collected: Collected,
+  value: unknown,
+  baseUrl: string,
+  titleHint: string | null = null,
+): void {
   const raw = typeof value === "string" ? decodeHTML(value) : null;
   if (raw) {
     try {
@@ -73,8 +103,14 @@ function addImage(collected: Collected, value: unknown, baseUrl: string): void {
       if (url.protocol !== "http:" && url.protocol !== "https:") return;
       if (/\.svg(\?|$)/i.test(url.pathname)) return;
       const normalized = url.toString();
-      if (!collected.images.some((existing) => existing === normalized)) {
-        if (collected.images.length < IMAGE_LIMIT) collected.images.push(normalized);
+      const title = cleanImageTitle(titleHint) || imageTitleFromUrl(normalized);
+      const existing = collected.images.find((image) => image.url === normalized);
+      if (existing) {
+        if (!existing.title && title) existing.title = title;
+        return;
+      }
+      if (collected.images.length < IMAGE_LIMIT) {
+        collected.images.push({ url: normalized, title });
       }
     } catch {
       // ignore invalid URLs
@@ -82,12 +118,19 @@ function addImage(collected: Collected, value: unknown, baseUrl: string): void {
     return;
   }
   if (Array.isArray(value)) {
-    value.forEach((entry) => addImage(collected, entry, baseUrl));
+    value.forEach((entry) => addImage(collected, entry, baseUrl, titleHint));
     return;
   }
   if (value && typeof value === "object") {
     const obj = value as SchemaNode;
-    addImage(collected, obj.url ?? obj.contentUrl ?? obj["@id"], baseUrl);
+    const ownTitle =
+      cleanImageTitle(obj.caption) ||
+      cleanImageTitle(obj.name) ||
+      cleanImageTitle(obj.description) ||
+      cleanImageTitle(obj.alt) ||
+      cleanImageTitle(obj.title) ||
+      titleHint;
+    addImage(collected, obj.url ?? obj.contentUrl ?? obj["@id"], baseUrl, ownTitle);
   }
 }
 
@@ -150,7 +193,8 @@ function handleSchemaNode(node: SchemaNode, collected: Collected, baseUrl: strin
     if (typeof node.description === "string") {
       addDescription(collected, node.description);
     }
-    asArray(node.image).forEach((image) => addImage(collected, image, baseUrl));
+    const productName = typeof node.name === "string" ? node.name : null;
+    asArray(node.image).forEach((image) => addImage(collected, image, baseUrl, productName));
   }
 
   if (isOffer || "price" in node || "lowPrice" in node || "highPrice" in node) {
@@ -289,14 +333,20 @@ function parseMicrodata($: CheerioAPI, collected: Collected, baseUrl: string): v
   if (product.length) {
     collected.productSeen = true;
     const name = product.find('[itemprop="name"]').first();
-    if (name.length) addUnique(collected.titles, name.text() || name.attr("content") || "", TITLE_LIMIT);
+    const productName = name.text() || name.attr("content") || null;
+    if (name.length) addUnique(collected.titles, productName || "", TITLE_LIMIT);
     const description = product.find('[itemprop="description"]').first();
     if (description.length) {
       addDescription(collected, description.attr("content") || description.text());
     }
     product.find('[itemprop="image"]').each((_, element) => {
       const node = $(element);
-      addImage(collected, node.attr("content") || node.attr("src") || "", baseUrl);
+      addImage(
+        collected,
+        node.attr("content") || node.attr("src") || "",
+        baseUrl,
+        node.attr("alt") || node.attr("title") || productName,
+      );
     });
     const currency =
       product.find('[itemprop="priceCurrency"]').first().attr("content") ||
@@ -326,7 +376,12 @@ function parseMicrodata($: CheerioAPI, collected: Collected, baseUrl: string): v
 
   $('[itemprop="image"]').each((_, element) => {
     const node = $(element);
-    addImage(collected, node.attr("content") || node.attr("src") || "", baseUrl);
+    addImage(
+      collected,
+      node.attr("content") || node.attr("src") || "",
+      baseUrl,
+      node.attr("alt") || node.attr("title") || null,
+    );
   });
 }
 
@@ -372,12 +427,19 @@ function parseImagesDom($: CheerioAPI, collected: Collected, baseUrl: string): v
     if (collected.images.length >= IMAGE_LIMIT) return false;
     const node = $(element);
     const hint = `${node.attr("class") || ""} ${node.attr("id") || ""} ${node.attr("alt") || ""}`;
-    if (/logo|icon|sprite|avatar|badge|payment|flag/i.test(hint)) return;
+    if (/logo|icon|sprite|avatar|badge|payment|flag|loading|loader|spinner|placeholder/i.test(hint)) return;
     const src =
       node.attr("src") ||
       node.attr("data-src") ||
       (node.attr("data-srcset") || node.attr("srcset") || "").split(",")[0]?.trim().split(" ")[0];
-    if (src) addImage(collected, src, baseUrl);
+    if (src) {
+      addImage(
+        collected,
+        src,
+        baseUrl,
+        node.attr("alt") || node.attr("title") || node.attr("aria-label") || collected.titles[0] || null,
+      );
+    }
     return undefined;
   });
 }
@@ -459,10 +521,15 @@ export function parseProductHtml(
 
   if (ogDescription) addDescription(collected, ogDescription);
 
+  const ogImageAlt = metaContent(
+    $,
+    'meta[property="og:image:alt"]',
+    'meta[name="twitter:image:alt"]',
+  );
   $('meta[property="og:image"], meta[property="og:image:secure_url"], meta[name="twitter:image"], link[rel="image_src"]').each(
     (_, element) => {
       const value = $(element).attr("content") || $(element).attr("href");
-      if (value) addImage(collected, value, baseUrl);
+      if (value) addImage(collected, value, baseUrl, ogImageAlt || ogTitle);
     },
   );
 

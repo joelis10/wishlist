@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import { addItemAction } from "@/app/actions/items";
 import { formatPrice } from "@/lib/money";
-import type { ScrapeResult } from "@/lib/scraper/types";
+import type { ImageCandidate, ScrapeResult } from "@/lib/scraper/types";
 import { ItemForm, type ItemFormDefaults } from "./item-form";
 import { ChevronLeftIcon, SparkleIcon } from "./icons";
 import { Modal } from "./modal";
@@ -16,6 +16,20 @@ const FIELD_LABELS: Record<FieldKey, string> = {
   price: "Price",
   image: "Image",
 };
+
+function shortFilename(url: string): string {
+  try {
+    const name = decodeURIComponent(new URL(url).pathname.split("/").pop() || "");
+    return name.length > 42 ? `${name.slice(0, 42)}…` : name;
+  } catch {
+    return url;
+  }
+}
+
+function imageOptionLabel(image: ImageCandidate, index: number): string {
+  const filename = shortFilename(image.url);
+  return image.title ? `${image.title} — ${filename}` : `Image ${index + 1} — ${filename}`;
+}
 
 function emptyDefaults(url = ""): ItemFormDefaults {
   return {
@@ -146,7 +160,7 @@ export function AddItemFlow({ wishlistId, initialUrl = "" }: Props) {
         next.currency = price.currency;
       }
     }
-    if (selected.image) next.imageUrl = result.candidates.image[choice.image] || "";
+    if (selected.image) next.imageUrl = result.candidates.image[choice.image]?.url || "";
     setDefaults(next);
     setSelectionOpen(false);
     setStep("form");
@@ -291,7 +305,7 @@ export function AddItemFlow({ wishlistId, initialUrl = "" }: Props) {
                   : key === "description"
                     ? result.candidates.description
                     : key === "image"
-                      ? result.candidates.image
+                      ? result.candidates.image.map(imageOptionLabel)
                       : result.candidates.price.map((price) => price.label);
 
               const selectedImage =
@@ -327,14 +341,19 @@ export function AddItemFlow({ wishlistId, initialUrl = "" }: Props) {
                     ))}
                   </select>
                   {selectedImage && selected[key] ? (
-                    <div className="relative mt-2 flex h-28 items-center justify-center overflow-hidden rounded-lg border border-line bg-raised">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src={selectedImage}
-                        alt=""
-                        className="h-full w-full object-contain"
-                        referrerPolicy="no-referrer"
-                      />
+                    <div className="mt-2 overflow-hidden rounded-lg border border-line bg-raised">
+                      <div className="flex h-28 items-center justify-center">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={selectedImage.url}
+                          alt={selectedImage.title || ""}
+                          className="h-full w-full object-contain"
+                          referrerPolicy="no-referrer"
+                        />
+                      </div>
+                      <p className="line-clamp-2 border-t border-line bg-surface px-3 py-2 text-xs text-muted">
+                        {selectedImage.title || "No image title available"}
+                      </p>
                     </div>
                   ) : null}
                 </div>

@@ -2,6 +2,7 @@ import { config } from "../env";
 import { siteDomain } from "../validation";
 import { fetchPage, randomUserAgent } from "./fetch";
 import { fetchPageWithBrowser, hasBrowser } from "./browser";
+import { isEbayUrl, scrapeEbayItem } from "./ebay";
 import { parseProductHtml } from "./parse";
 import { ScrapeError, type ScrapeMode, type ScrapeResult } from "./types";
 
@@ -89,6 +90,12 @@ export async function scrapeProductUrl(
   if (useCache) {
     const cached = cacheGet(key);
     if (cached) return cached;
+  }
+
+  if (isEbayUrl(rawUrl)) {
+    const ebayResult = await scrapeEbayItem(rawUrl);
+    if (useCache) cacheSet(key, ebayResult);
+    return ebayResult;
   }
 
   const userAgent = randomUserAgent();

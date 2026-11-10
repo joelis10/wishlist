@@ -4,11 +4,16 @@ export type PriceCandidate = {
   label: string;
 };
 
+export type ImageCandidate = {
+  url: string;
+  title: string | null;
+};
+
 export type ScrapeCandidates = {
   title: string[];
   description: string[];
   price: PriceCandidate[];
-  image: string[];
+  image: ImageCandidate[];
 };
 
 export type ScrapeResult = {

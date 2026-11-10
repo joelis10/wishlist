@@ -46,7 +46,8 @@ describe("product HTML parsing", () => {
     const parsed = parseProductHtml(jsonLdPage, "https://shop.example.com/lamp", "GBP");
     expect(parsed.candidates.title[0]).toBe("Oak Desk Lamp");
     expect(parsed.candidates.description[0]).toContain("solid oak");
-    expect(parsed.candidates.image[0]).toBe("https://shop.example.com/images/lamp.jpg");
+    expect(parsed.candidates.image[0]?.url).toBe("https://shop.example.com/images/lamp.jpg");
+    expect(parsed.candidates.image[0]?.title).toBe("Oak Desk Lamp");
     expect(parsed.candidates.price.map((price) => price.value)).toEqual(
       expect.arrayContaining([4999, 5999]),
     );
@@ -58,7 +59,8 @@ describe("product HTML parsing", () => {
     const parsed = parseProductHtml(domPage, "https://shop.example.com/scarf", "GBP");
     expect(parsed.candidates.title).toContain("Wool Scarf");
     expect(parsed.candidates.price[0]?.value).toBe(1800);
-    expect(parsed.candidates.image[0]).toBe("https://shop.example.com/scarf.jpg");
+    expect(parsed.candidates.image[0]?.url).toBe("https://shop.example.com/scarf.jpg");
+    expect(parsed.candidates.image[0]?.title).toBe("Wool scarf");
     expect(parsed.hadProductData).toBe(true);
   });
 
@@ -103,8 +105,11 @@ describe("HTML entity decoding", () => {
       "ESP32-S2 WiFi Fan Controller | 4-Channel",
     );
     expect(parsed.candidates.description[0]).toBe("CE-certified controller for $35.99");
-    expect(parsed.candidates.image[0]).toBe(
+    expect(parsed.candidates.image[0]?.url).toBe(
       "https://shop.example.com/image.png?size=large&format=webp",
+    );
+    expect(parsed.candidates.image[0]?.title).toBe(
+      "ESP32-S2 WiFi Fan Controller | 4-Channel",
     );
     expect(parsed.candidates.price[0]?.value).toBe(3599);
     expect(parsed.availability).toBe(true);

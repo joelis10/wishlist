@@ -36,6 +36,11 @@ export const config = {
   fx: {
     cron: process.env.FX_CRON || "0 0 * * *",
   },
+  ebay: {
+    clientId: process.env.EBAY_CLIENT_ID || "",
+    clientSecret: process.env.EBAY_CLIENT_SECRET || "",
+    marketplaceId: process.env.EBAY_MARKETPLACE_ID || "",
+  },
   scrape: {
     enabled: bool(process.env.SCRAPE_ENABLED, true),
     cron: process.env.SCRAPE_CRON || "0 0 * * *",

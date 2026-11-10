@@ -6,7 +6,8 @@ A small, self-hosted wishlist app. One container, one SQLite database, no extern
 
 - Accounts with persistent sessions, public wishlists, owner-managed editors, and private wishlists that only the owner and editors can open.
 - Wishlist images, descriptions, custom accent colours, optional recurring end dates, item search, price/site filters and sorting.
-- Items added from a product link. An on-demand scraper suggests title, description, price and image; every suggestion can be selected or ignored before the item is saved.
+- Items added from a product link. An on-demand scraper suggests title, description, price and images with available alt/title labels; every suggestion can be selected or ignored before the item is saved.
+- Optional official eBay Browse API support, since eBay blocks direct page scraping.
 - Approximate display-currency conversions. GBP is the default; guests and signed-in users can choose another currency in Settings. Price filters use the converted value.
 - Guest claims with a name, plus a spoiler prompt before a wishlist opens.
 - Installable PWA with Android share-sheet support. No native Android app is needed.
@@ -61,6 +62,9 @@ Copy `.env.example` to `.env`. Compose reads it automatically.
 | `SCRAPE_DELAY_MS` | `2500` | Delay between requests. |
 | `SCRAPE_DOMAIN_DELAY_MS` | `15000` | Minimum delay between requests to the same domain. |
 | `CHROMIUM_PATH` | set by the image | Optional path to a Chromium binary for scraper fallback. |
+| `EBAY_CLIENT_ID` | empty | Optional eBay Browse API Client ID. |
+| `EBAY_CLIENT_SECRET` | empty | Optional eBay Browse API Client Secret. |
+| `EBAY_MARKETPLACE_ID` | derived from the URL | Optional override such as `EBAY_GB` or `EBAY_US`. |
 | `VAPID_PUBLIC_KEY` / `VAPID_PRIVATE_KEY` | auto-generated | Web Push keys. Generated once and stored in the database if omitted. |
 | `VAPID_SUBJECT` | `APP_URL` | Contact string for push services. Use a `mailto:` address if possible. |
 
@@ -69,6 +73,18 @@ Copy `.env.example` to `.env`. Compose reads it automatically.
 Pasting a link never scrapes automatically. Press **Fetch details** to try. The scraper first uses a normal HTTP request with a browser user agent and reads JSON-LD, Open Graph, microdata and visible price fields. In `auto` mode it falls back to headless Chromium when the page is blocked or has no usable product data.
 
 Some shops block data-centre IPs or require a login; in those cases the app shows an error and keeps **Manually input details** available. The container includes Chromium but it is only launched on demand. Keep `SCRAPE_JOBS_HEADLESS=false` unless scheduled checks really need a browser.
+
+When images are extracted, the picker also shows their title/alt text when the page provides it, falling back to a readable filename.
+
+### eBay
+
+eBay blocks direct page requests with bot protection. The app therefore does not try to scrape eBay HTML. Instead, add the optional official eBay Browse API credentials:
+
+1. Create an application keyset in the [eBay Developers Program](https://developer.ebay.com/).
+2. Put its Client ID and Client Secret in `.env` as `EBAY_CLIENT_ID` and `EBAY_CLIENT_SECRET`.
+3. Restart the app. The marketplace is derived from the eBay URL (e.g. `ebay.co.uk` → `EBAY_GB`); set `EBAY_MARKETPLACE_ID` to override it.
+
+Without these credentials, eBay links show a clear error and fall back to manual entry. The Browse API uses eBay's application access token and is subject to eBay's own API limits.
 
 The scraper accepts only standard HTTP/HTTPS URLs on public addresses, limits response size and redirects, and rate-limits requests.
 
