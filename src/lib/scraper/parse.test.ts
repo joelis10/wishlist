@@ -71,3 +71,42 @@ describe("product HTML parsing", () => {
     expect(parsed.availability).toBe(false);
   });
 });
+
+
+describe("HTML entity decoding", () => {
+  it("decodes entities inside JSON-LD strings", () => {
+    const page = `
+      <!doctype html>
+      <html>
+        <head>
+          <title>Fallback title</title>
+          <script type="application/ld+json">
+            {
+              "@context": "https://schema.org",
+              "@type": "Product",
+              "name": "ESP32-S2&#x20;WiFi&#x20;Fan&#x20;Controller&#x20;&#x7C;&#x20;4-Channel",
+              "description": "CE-certified&#x20;controller&#x20;for&#x20;&#x24;35.99",
+              "image": "https://shop.example.com/image.png?size=large&amp;format=webp",
+              "offers": {
+                "@type": "Offer",
+                "price": "35.99",
+                "priceCurrency": "USD",
+                "availability": "https://schema.org/InStock"
+              }
+            }
+          </script>
+        </head>
+        <body></body>
+      </html>`;
+    const parsed = parseProductHtml(page, "https://shop.example.com/item", "GBP");
+    expect(parsed.candidates.title[0]).toBe(
+      "ESP32-S2 WiFi Fan Controller | 4-Channel",
+    );
+    expect(parsed.candidates.description[0]).toBe("CE-certified controller for $35.99");
+    expect(parsed.candidates.image[0]).toBe(
+      "https://shop.example.com/image.png?size=large&format=webp",
+    );
+    expect(parsed.candidates.price[0]?.value).toBe(3599);
+    expect(parsed.availability).toBe(true);
+  });
+});

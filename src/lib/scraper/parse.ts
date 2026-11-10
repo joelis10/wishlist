@@ -1,5 +1,6 @@
 import * as cheerio from "cheerio";
 import type { CheerioAPI } from "cheerio";
+import { decodeHTML } from "entities";
 import { formatPrice } from "../money";
 import { siteDomain } from "../validation";
 import type { PriceCandidate, ScrapeCandidates } from "./types";
@@ -30,7 +31,7 @@ function asArray<T>(value: T | T[] | null | undefined): T[] {
 }
 
 function cleanInline(value: string, max = 2000): string {
-  return value.replace(/\s+/g, " ").trim().slice(0, max);
+  return decodeHTML(value).replace(/\s+/g, " ").trim().slice(0, max);
 }
 
 function typesOf(node: SchemaNode): string[] {
@@ -65,7 +66,7 @@ function addDescription(collected: Collected, value: string): void {
 }
 
 function addImage(collected: Collected, value: unknown, baseUrl: string): void {
-  const raw = typeof value === "string" ? value : null;
+  const raw = typeof value === "string" ? decodeHTML(value) : null;
   if (raw) {
     try {
       const url = new URL(raw, baseUrl);
@@ -111,7 +112,7 @@ function addPrice(collected: Collected, major: unknown, currencyHint?: unknown):
 
 function availabilityValue(value: unknown): boolean | null {
   if (typeof value !== "string") return null;
-  const normalized = value.toLowerCase();
+  const normalized = decodeHTML(value).toLowerCase();
   if (
     normalized.includes("outofstock") ||
     normalized.includes("soldout") ||
@@ -199,7 +200,7 @@ function parseJsonLd($: CheerioAPI, collected: Collected, baseUrl: string): void
 function metaContent($: CheerioAPI, ...selectors: string[]): string | null {
   for (const selector of selectors) {
     const value = $(selector).first().attr("content");
-    if (value && value.trim()) return value.trim();
+    if (value && value.trim()) return decodeHTML(value.trim());
   }
   return null;
 }
@@ -255,7 +256,7 @@ const CODE_RE = "GBP|USD|EUR|AUD|CAD|NZD|JPY|CHF|SEK|NOK|DKK|INR|PLN";
 const SYMBOL_RE = "US\\$|CA\\$|AU\\$|NZ\\$|A\\$|C\\$|£|€|¥|₹|\\$";
 
 function moneyFromText(text: string, defaultCurrency: string, collected: Collected): void {
-  const source = text.slice(0, 800);
+  const source = decodeHTML(text).slice(0, 800);
   const pattern = new RegExp(
     `(?:(${SYMBOL_RE})|\\b(${CODE_RE})\\b)\\s*([0-9][0-9.,\\u00a0 ]{0,16})|([0-9][0-9.,\\u00a0]{0,16})\\s*\\b(${CODE_RE})\\b`,
     "gi",
@@ -279,7 +280,7 @@ function moneyFromText(text: string, defaultCurrency: string, collected: Collect
 }
 
 function addBarePrice(text: string, currency: string, collected: Collected): void {
-  const amount = parseAmount(text.slice(0, 60));
+  const amount = parseAmount(decodeHTML(text).slice(0, 60));
   if (amount != null) addPrice(collected, amount, currency);
 }
 
