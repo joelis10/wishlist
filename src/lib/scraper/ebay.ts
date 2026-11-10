@@ -109,7 +109,7 @@ async function getAccessToken(): Promise<string> {
 
   let response: Response;
   try {
-    response = await fetch("https://api.ebay.com/identity/v2/oauth2/token", {
+    response = await fetch("https://api.ebay.com/identity/v1/oauth2/token", {
       method: "POST",
       cache: "no-store",
       signal: AbortSignal.timeout(15_000),
