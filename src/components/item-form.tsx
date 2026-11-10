@@ -39,6 +39,7 @@ export function ItemForm({
 }: Props) {
   const [state, formAction] = useActionState(action, {});
   const [imageUrl, setImageUrl] = useState(defaults.imageUrl);
+  const currencies = [...new Set([defaults.currency, ...CURRENCIES].filter(Boolean))];
 
   return (
     <form action={formAction} className="space-y-5">
@@ -130,7 +131,7 @@ export function ItemForm({
             className="input"
             defaultValue={defaults.currency || "GBP"}
           >
-            {CURRENCIES.map((currency) => (
+            {currencies.map((currency) => (
               <option key={currency} value={currency}>
                 {currency}
               </option>

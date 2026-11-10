@@ -120,6 +120,7 @@ export function WishlistItems({
 
   return (
     <section>
+      <h2 className="sr-only">Items</h2>
       <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center">
         <div className="relative flex-1">
           <SearchIcon className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-muted" />
