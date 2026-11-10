@@ -28,6 +28,7 @@ A small, self-hosted wishlist app. One container, one SQLite database, no extern
 - Approximate display-currency conversions. GBP is the default; guests and signed-in users can choose another currency in Settings. Price filters use the converted value.
 - Light, dark or system theme. Guests keep it in a cookie; signed-in users keep it on their account across devices.
 - Guest claims with a name, plus a spoiler prompt before a wishlist opens.
+- A **Show claimed** filter on wishlists you don't own, with claimed items visible by default.
 - Installable PWA with Android share-sheet support. No native Android app is needed.
 - Web Push registration and a test notification.
 - Daily background jobs for price/stock refreshes and exchange rates.
@@ -57,6 +58,7 @@ If you expose the container directly, set `APP_PORT` and use `http://server-ip:3
 - A guest link is only available once a wishlist is public. Editors can add and edit items, but only the owner can change visibility, collaborators or delete the wishlist.
 - On the first visit to a wishlist, guests are asked whether it belongs to them. Owners get a spoiler-free view; buyers see claims.
 - Claiming an item requires a name so other guests know it has been bought. Claims are atomic: two people cannot claim the same item.
+- On wishlists you do not own, **Show claimed** toggles bought items in or out of the list. It defaults to on and is hidden on your own wishlists.
 - Item descriptions are replaced on the card by a custom note when one exists. **View item** opens the full note, description and a link to the original page.
 
 ## Configuration
