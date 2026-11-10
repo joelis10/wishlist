@@ -27,8 +27,7 @@ function shortFilename(url: string): string {
 }
 
 function imageOptionLabel(image: ImageCandidate, index: number): string {
-  const filename = shortFilename(image.url);
-  return image.title ? `${image.title} — ${filename}` : `Image ${index + 1} — ${filename}`;
+  return `Image ${index + 1} — ${image.title || shortFilename(image.url)}`;
 }
 
 function emptyDefaults(url = ""): ItemFormDefaults {
@@ -324,22 +323,28 @@ export function AddItemFlow({ wishlistId, initialUrl = "" }: Props) {
                     />
                     {FIELD_LABELS[key]}
                   </label>
-                  <select
-                    value={choice[key]}
-                    onChange={(event) =>
-                      setChoice((current) => ({ ...current, [key]: Number(event.target.value) }))
-                    }
-                    disabled={!selected[key]}
-                    className="input mt-2 disabled:opacity-50"
-                  >
-                    {options.map((option, index) => (
-                      <option key={`${key}-${index}`} value={index}>
-                        {key === "description" && option.length > 120
-                          ? `${option.slice(0, 120)}…`
-                          : option}
-                      </option>
-                    ))}
-                  </select>
+                  {options.length > 1 ? (
+                    <select
+                      value={choice[key]}
+                      onChange={(event) =>
+                        setChoice((current) => ({ ...current, [key]: Number(event.target.value) }))
+                      }
+                      disabled={!selected[key]}
+                      className="input mt-2 disabled:opacity-50"
+                    >
+                      {options.map((option, index) => (
+                        <option key={`${key}-${index}`} value={index}>
+                          {key === "description" && option.length > 120
+                            ? `${option.slice(0, 120)}…`
+                            : option}
+                        </option>
+                      ))}
+                    </select>
+                  ) : key !== "image" ? (
+                    <p className="mt-2 max-h-40 overflow-y-auto whitespace-pre-line rounded-xl border border-line bg-raised/40 px-3 py-2 text-sm leading-relaxed text-ink">
+                      {options[0]}
+                    </p>
+                  ) : null}
                   {selectedImage && selected[key] ? (
                     <div className="mt-2 overflow-hidden rounded-lg border border-line bg-raised">
                       <div className="flex h-28 items-center justify-center">
@@ -351,9 +356,14 @@ export function AddItemFlow({ wishlistId, initialUrl = "" }: Props) {
                           referrerPolicy="no-referrer"
                         />
                       </div>
-                      <p className="line-clamp-2 border-t border-line bg-surface px-3 py-2 text-xs text-muted">
-                        {selectedImage.title || "No image title available"}
-                      </p>
+                      <div className="border-t border-line bg-surface px-3 py-2">
+                        <p className="text-[11px] text-muted">
+                          Image {choice.image + 1} of {result?.candidates.image.length ?? 1}
+                        </p>
+                        <p className="line-clamp-2 text-xs text-ink">
+                          {selectedImage.title || shortFilename(selectedImage.url)}
+                        </p>
+                      </div>
                     </div>
                   ) : null}
                 </div>
