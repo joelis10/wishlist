@@ -2,7 +2,7 @@ name: wishlist
 
 services:
   app:
-    image: ${WISHLIST_IMAGE:-wishlist:local}
+    image: ${WISHLIST_IMAGE:-ghcr.io/joelis10/wishlist:latest}
     build:
       context: .
     restart: unless-stopped

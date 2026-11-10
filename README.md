@@ -123,20 +123,34 @@ docker compose start app
 
 Restore with the same command in reverse while the app is stopped.
 
-## Building with GitHub Actions
+## Deploying with Docker on your server
 
-`.github/workflows/docker.yml` builds multi-architecture (`linux/amd64` and `linux/arm64`) images and pushes them to `ghcr.io/<owner>/<repo>` on pushes to `main` and version tags.
+The GitHub Actions workflow builds multi-architecture (`linux/amd64` and `linux/arm64`) images and publishes them to `ghcr.io/joelis10/wishlist`.
 
-This is free for public repositories. On a private repository it uses your included GitHub Actions minutes and GHCR storage; delete the workflow if you would rather build with Compose on your server.
-
-To deploy an image from GHCR instead of building on the server:
+On the server:
 
 ```bash
-WISHLIST_IMAGE=ghcr.io/<owner>/<repo>:latest docker compose pull
-WISHLIST_IMAGE=ghcr.io/<owner>/<repo>:latest docker compose up -d --no-build
+git clone https://github.com/joelis10/wishlist.git
+cd wishlist
+cp .env.example .env
+# Set APP_URL to your real public URL
+# Optionally set APP_PORT, TZ, etc.
+
+docker compose pull
+docker compose up -d --no-build
 ```
 
-Make the GHCR package public in GitHub (or log the server into `ghcr.io`). To update later, pull and recreate the container.
+The compose file defaults to the published `ghcr.io/joelis10/wishlist:latest` image. To update later:
+
+```bash
+git pull
+docker compose pull
+docker compose up -d --no-build
+```
+
+If you prefer to build on the server instead of pulling, use `docker compose up -d --build` (the Dockerfile is in the same repository).
+
+This repository is public, so GitHub Actions builds and the GHCR image are free. Keep the image package public in GitHub to allow anonymous pulls. On a private fork, either make the package public or log the server into `ghcr.io` with a token that has `read:packages`.
 
 ## Local development
 
