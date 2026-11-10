@@ -2,6 +2,15 @@
 
 A small, self-hosted wishlist app. One container, one SQLite database, no external database.
 
+<details>
+<summary>Screenshots</summary>
+
+![Wishlist browse page with three public wishlists](docs/screenshots/browse.jpg)
+
+![Wishlist page with a hero image, item cards, prices and claim buttons](docs/screenshots/wishlist.jpg)
+
+</details>
+
 ## What's included
 
 - Accounts with persistent sessions, public wishlists, owner-managed editors, and private wishlists that only the owner and editors can open.
