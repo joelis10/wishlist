@@ -1,6 +1,7 @@
 "use client";
 
 import { useDeferredValue, useEffect, useMemo, useState } from "react";
+import { convertCents, type ExchangeRates } from "@/lib/fx";
 import type { Item } from "@/lib/items";
 import { FilterIcon, SearchIcon } from "./icons";
 import { ItemCard } from "./item-card";
@@ -15,7 +16,19 @@ type Props = {
   canClaim: boolean;
   showClaims: boolean;
   viewerName: string | null;
+  preferredCurrency: string;
+  rates: ExchangeRates | null;
 };
+
+function effectivePriceCents(
+  item: Item,
+  preferredCurrency: string,
+  rates: ExchangeRates | null,
+): number | null {
+  if (item.priceCents == null) return null;
+  if (item.currency.toUpperCase() === preferredCurrency.toUpperCase()) return item.priceCents;
+  return convertCents(item.priceCents, item.currency, preferredCurrency, rates) ?? item.priceCents;
+}
 
 function toCents(value: string): number | null {
   if (!value.trim()) return null;
@@ -31,6 +44,8 @@ export function WishlistItems({
   canClaim,
   showClaims,
   viewerName,
+  preferredCurrency,
+  rates,
 }: Props) {
   const [search, setSearch] = useState("");
   const [minPrice, setMinPrice] = useState("");
@@ -67,8 +82,9 @@ export function WishlistItems({
           .toLowerCase();
         if (!haystack.includes(query)) return false;
       }
-      if (min != null && (item.priceCents == null || item.priceCents < min)) return false;
-      if (max != null && (item.priceCents == null || item.priceCents > max)) return false;
+      const price = effectivePriceCents(item, preferredCurrency, rates);
+      if (min != null && (price == null || price < min)) return false;
+      if (max != null && (price == null || price > max)) return false;
       if (selected.size > 0) {
         if (!item.domain || !selected.has(item.domain)) return false;
       }
@@ -79,16 +95,22 @@ export function WishlistItems({
       switch (sort) {
         case "oldest":
           return a.createdAt.localeCompare(b.createdAt) || a.id - b.id;
-        case "price-asc":
-          if (a.priceCents == null && b.priceCents == null) return a.title.localeCompare(b.title);
-          if (a.priceCents == null) return 1;
-          if (b.priceCents == null) return -1;
-          return a.priceCents - b.priceCents;
-        case "price-desc":
-          if (a.priceCents == null && b.priceCents == null) return a.title.localeCompare(b.title);
-          if (a.priceCents == null) return 1;
-          if (b.priceCents == null) return -1;
-          return b.priceCents - a.priceCents;
+        case "price-asc": {
+          const aPrice = effectivePriceCents(a, preferredCurrency, rates);
+          const bPrice = effectivePriceCents(b, preferredCurrency, rates);
+          if (aPrice == null && bPrice == null) return a.title.localeCompare(b.title);
+          if (aPrice == null) return 1;
+          if (bPrice == null) return -1;
+          return aPrice - bPrice;
+        }
+        case "price-desc": {
+          const aPrice = effectivePriceCents(a, preferredCurrency, rates);
+          const bPrice = effectivePriceCents(b, preferredCurrency, rates);
+          if (aPrice == null && bPrice == null) return a.title.localeCompare(b.title);
+          if (aPrice == null) return 1;
+          if (bPrice == null) return -1;
+          return bPrice - aPrice;
+        }
         case "domain":
           if (a.domain == null && b.domain == null) return a.title.localeCompare(b.title);
           if (a.domain == null) return 1;
@@ -100,7 +122,7 @@ export function WishlistItems({
     });
 
     return result;
-  }, [items, deferredSearch, minPrice, maxPrice, sites, sort]);
+  }, [items, deferredSearch, minPrice, maxPrice, sites, sort, preferredCurrency, rates]);
 
   const activeFilters =
     (minPrice.trim() ? 1 : 0) + (maxPrice.trim() ? 1 : 0) + sites.length;
@@ -180,6 +202,8 @@ export function WishlistItems({
                 canClaim={canClaim}
                 showClaims={showClaims}
                 viewerName={viewerName}
+                preferredCurrency={preferredCurrency}
+                rates={rates}
               />
             ))}
           </div>
@@ -248,7 +272,7 @@ export function WishlistItems({
       >
         <div className="space-y-5 pb-2">
           <div>
-            <p className="label">Price</p>
+            <p className="label">Price ({preferredCurrency})</p>
             <div className="flex items-center gap-2">
               <input
                 type="number"

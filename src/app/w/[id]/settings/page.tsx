@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireViewer } from "@/lib/auth";
+import { accentStyle } from "@/lib/accent";
 import { absoluteUrl } from "@/lib/env";
 import { getWishlistAccess, listCollaborators } from "@/lib/wishlists";
 import { deleteWishlistAction, setWishlistPublicAction } from "@/app/actions/wishlists";
@@ -29,7 +30,10 @@ export default async function WishlistSettingsPage({ params }: PageProps) {
   const collaborators = listCollaborators(id);
 
   return (
-    <div className="container-page max-w-2xl pb-24 pt-8 sm:pt-10">
+    <div
+      className="container-page max-w-2xl pb-24 pt-8 sm:pt-10"
+      style={accentStyle(wishlist.accentColor)}
+    >
       <Link href={`/w/${id}`} className="btn btn-ghost btn-sm -ml-2">
         <ChevronLeftIcon className="size-4" />
         {wishlist.title}

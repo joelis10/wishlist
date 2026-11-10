@@ -1,16 +1,17 @@
 # Wishlist
 
-A small, self-hosted wishlist app. One container, one SQLite database, no external services.
+A small, self-hosted wishlist app. One container, one SQLite database, no external database.
 
 ## What's included
 
 - Accounts with persistent sessions, public wishlists, owner-managed editors, and private wishlists that only the owner and editors can open.
-- Wishlist images, descriptions, optional recurring end dates, item search, price/site filters and sorting.
+- Wishlist images, descriptions, custom accent colours, optional recurring end dates, item search, price/site filters and sorting.
 - Items added from a product link. An on-demand scraper suggests title, description, price and image; every suggestion can be selected or ignored before the item is saved.
+- Approximate display-currency conversions. GBP is the default; guests and signed-in users can choose another currency in Settings. Price filters use the converted value.
 - Guest claims with a name, plus a spoiler prompt before a wishlist opens.
 - Installable PWA with Android share-sheet support. No native Android app is needed.
 - Web Push registration and a test notification.
-- A daily background job that refreshes prices and stock availability.
+- Daily background jobs for price/stock refreshes and exchange rates.
 - Link previews with the wishlist photo, title and item count.
 
 ## Quick start
@@ -50,7 +51,8 @@ Copy `.env.example` to `.env`. Compose reads it automatically.
 | `COOKIE_SECURE` | derived from `APP_URL` | Force `Secure` cookies on or off. |
 | `ALLOW_REGISTRATION` | `true` | Set to `false` after creating your accounts to close sign-ups. |
 | `TZ` | system | Timezone used for the end dates and the scrape schedule. |
-| `DEFAULT_CURRENCY` | `GBP` | Currency used when no currency is found. |
+| `DEFAULT_CURRENCY` | `GBP` | Currency used when no currency is found on a scraped item. |
+| `FX_CRON` | `0 0 * * *` | Five-field cron expression for the daily exchange-rate refresh. |
 | `SCRAPE_ENABLED` | `true` | Enable the scheduled price/stock refresh. |
 | `SCRAPE_CRON` | `0 0 * * *` | Five-field cron expression, checked in `TZ`. |
 | `SCRAPE_HEADLESS` | `auto` | On-demand scraper: `auto`, `always` or `never` use Chromium. |
@@ -70,9 +72,15 @@ Some shops block data-centre IPs or require a login; in those cases the app show
 
 The scraper accepts only standard HTTP/HTTPS URLs on public addresses, limits response size and redirects, and rate-limits requests.
 
-## Price and stock refresh
+## Currency
 
-The scheduler is built into the app and starts at midnight by default. It checks every unclaimed item with a link, one at a time with per-domain delays, and updates the stored price and availability when the page exposes them. Claimed items are skipped because they have already been bought.
+Prices are always stored in the currency found on the item page. The app shows the original price plus an approximate converted value when the item currency differs from your display currency. GBP is the default; the choice is in **Settings**, either for a signed-in account or for a guest device. Price filters and price sorting use the converted amount.
+
+Exchange rates are fetched from the free [Frankfurter](https://frankfurter.dev) API (ECB data), stored in SQLite and refreshed by a daily background job. Conversion is approximate by design. If the rates service is unavailable, existing rates are kept and the app continues to work without converted values.
+
+## Price, stock and exchange-rate refresh
+
+The scheduler is built into the app and starts at midnight by default. It checks every unclaimed item with a link, one at a time with per-domain delays, and updates the stored price and availability when the page exposes them. Claimed items are skipped because they have already been bought. A separate scheduled task refreshes the exchange rates; both run daily by default, even if price checks are disabled.
 
 On a large list the first run may take a while; use `SCRAPE_MAX_PER_RUN` to cap it. This setup is intended for a single app instance. Do not run multiple replicas, otherwise each one will schedule its own refresh.
 

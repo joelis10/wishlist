@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireViewer } from "@/lib/auth";
+import { accentStyle } from "@/lib/accent";
 import { getItem } from "@/lib/items";
 import { getWishlistAccess } from "@/lib/wishlists";
 import { deleteItemAction, updateItemAction } from "@/app/actions/items";
@@ -30,7 +31,10 @@ export default async function EditItemPage({ params }: PageProps) {
   if (!item || item.wishlistId !== id) notFound();
 
   return (
-    <div className="container-page max-w-2xl pb-20 pt-8 sm:pt-10">
+    <div
+      className="container-page max-w-2xl pb-20 pt-8 sm:pt-10"
+      style={accentStyle(access.wishlist.accentColor)}
+    >
       <Link href={`/w/${id}`} className="btn btn-ghost btn-sm -ml-2">
         <ChevronLeftIcon className="size-4" />
         {access.wishlist.title}

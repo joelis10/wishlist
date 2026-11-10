@@ -8,6 +8,7 @@ export type Wishlist = {
   title: string;
   description: string | null;
   imagePath: string | null;
+  accentColor: string | null;
   endDate: string | null;
   recurrence: Recurrence;
   isPublic: boolean;
@@ -32,6 +33,7 @@ type WishlistRow = {
   title: string;
   description: string | null;
   image_path: string | null;
+  accent_color: string | null;
   end_date: string | null;
   recurrence: Recurrence;
   is_public: number;
@@ -55,6 +57,7 @@ function mapWishlist(row: WishlistRow): Wishlist {
     title: row.title,
     description: row.description,
     imagePath: row.image_path,
+    accentColor: row.accent_color,
     endDate: row.end_date,
     recurrence: row.recurrence,
     isPublic: Boolean(row.is_public),
@@ -154,12 +157,14 @@ export function updateWishlist(
     endDate: string | null;
     recurrence: Recurrence;
     imagePath: string | null;
+    accentColor: string | null;
   },
 ): void {
   getDb()
     .prepare(
       `UPDATE wishlists
-       SET title = ?, description = ?, end_date = ?, recurrence = ?, image_path = ?, updated_at = ?
+       SET title = ?, description = ?, end_date = ?, recurrence = ?, image_path = ?,
+           accent_color = ?, updated_at = ?
        WHERE id = ?`,
     )
     .run(
@@ -168,6 +173,7 @@ export function updateWishlist(
       data.endDate,
       data.recurrence,
       data.imagePath,
+      data.accentColor,
       nowIso(),
       id,
     );

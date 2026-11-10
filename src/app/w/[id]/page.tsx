@@ -3,7 +3,9 @@ import { cookies } from "next/headers";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getViewer } from "@/lib/auth";
+import { accentStyle } from "@/lib/accent";
 import { claimsCookieName, claimsModeFromCookie } from "@/lib/claims";
+import { getExchangeRates, getPreferredCurrency } from "@/lib/currency";
 import { endDateLabel } from "@/lib/dates";
 import { absoluteUrl } from "@/lib/env";
 import { listItems } from "@/lib/items";
@@ -81,6 +83,8 @@ export default async function WishlistPage({ params }: PageProps) {
 
   const wishlist = access.wishlist;
   const items = listItems(wishlist.id);
+  const preferredCurrency = await getPreferredCurrency(viewer);
+  const rates = getExchangeRates();
   const cookieStore = await cookies();
   const claimsMode = claimsModeFromCookie(
     cookieStore.get(claimsCookieName(wishlist.id))?.value,
@@ -102,9 +106,9 @@ export default async function WishlistPage({ params }: PageProps) {
   const ended = end ? end.relative.includes("ago") : false;
 
   return (
-    <div className="container-page pb-20 pt-6 sm:pt-8">
+    <div className="container-page pb-20 pt-6 sm:pt-8" style={accentStyle(wishlist.accentColor)}>
       {wishlist.imagePath ? (
-        <div className="aspect-[16/10] overflow-hidden rounded-2xl border border-line bg-raised">
+        <div className="aspect-[16/10] w-full overflow-hidden rounded-2xl border border-line bg-raised sm:w-1/2">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={wishlist.imagePath}
@@ -170,6 +174,8 @@ export default async function WishlistPage({ params }: PageProps) {
           canClaim={canClaim}
           showClaims={showClaims}
           viewerName={viewer?.username ?? null}
+          preferredCurrency={preferredCurrency}
+          rates={rates}
         />
       </div>
 

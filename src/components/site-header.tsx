@@ -16,7 +16,11 @@ export async function SiteHeader() {
               Browse
             </Link>
             {viewer ? (
-              <Link href="/wishlists" className="py-2 transition hover:text-ink" aria-label="My wishlists">
+              <Link
+                href="/wishlists"
+                className="py-2 transition hover:text-ink"
+                aria-label="My wishlists"
+              >
                 <span className="sm:hidden">Lists</span>
                 <span className="hidden sm:inline">My wishlists</span>
               </Link>
@@ -26,20 +30,11 @@ export async function SiteHeader() {
 
         <div key={viewer ? "signed-in" : "guest"} className="flex items-center gap-1.5">
           {viewer ? (
-            <>
-              <Link href="/w/new" className="btn btn-primary btn-sm">
-                <PlusIcon className="size-4" />
-                <span className="hidden xs:inline">New wishlist</span>
-                <span className="xs:hidden">New</span>
-              </Link>
-              <Link
-                href="/settings"
-                className="rounded-full p-2 text-muted transition hover:bg-raised hover:text-ink"
-                aria-label="Settings"
-              >
-                <SettingsIcon className="size-[18px]" />
-              </Link>
-            </>
+            <Link href="/w/new" className="btn btn-primary btn-sm">
+              <PlusIcon className="size-4" />
+              <span className="hidden xs:inline">New wishlist</span>
+              <span className="xs:hidden">New</span>
+            </Link>
           ) : (
             <>
               <Link href="/login" className="btn btn-ghost btn-sm">
@@ -51,6 +46,13 @@ export async function SiteHeader() {
               </Link>
             </>
           )}
+          <Link
+            href="/settings"
+            className="rounded-full p-2 text-muted transition hover:bg-raised hover:text-ink"
+            aria-label="Settings"
+          >
+            <SettingsIcon className="size-[18px]" />
+          </Link>
         </div>
       </div>
     </header>

@@ -1,8 +1,15 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { cookies } from "next/headers";
+import { getViewer, requireViewer } from "@/lib/auth";
+import {
+  currencyCookieOptions,
+  savePreferredCurrency,
+} from "@/lib/currency";
 import { getDb } from "@/lib/db";
-import { requireViewer } from "@/lib/auth";
+import { CURRENCY_COOKIE } from "@/lib/fx";
+import { CURRENCIES } from "@/lib/money";
 import { getWishlistAccess } from "@/lib/wishlists";
 import type { FormState } from "@/lib/forms";
 
@@ -30,4 +37,21 @@ export async function setDefaultWishlistAction(
     ok: true,
     message: wishlistId ? "Default wishlist saved." : "Default wishlist cleared.",
   };
+}
+
+
+export async function setPreferredCurrencyAction(
+  _state: FormState,
+  formData: FormData,
+): Promise<FormState> {
+  const currency = String(formData.get("currency") || "").trim().toUpperCase();
+  if (!CURRENCIES.includes(currency)) return { error: "Choose a supported currency." };
+
+  const viewer = await getViewer();
+  if (viewer) savePreferredCurrency(viewer.id, currency);
+
+  const cookieStore = await cookies();
+  cookieStore.set(CURRENCY_COOKIE, currency, currencyCookieOptions());
+  revalidatePath("/settings");
+  return { ok: true, message: "Currency updated." };
 }

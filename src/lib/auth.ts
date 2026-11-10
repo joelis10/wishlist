@@ -9,6 +9,7 @@ export type Viewer = {
   username: string;
   defaultWishlistId: number | null;
   notifyEnabled: boolean;
+  preferredCurrency: string;
 };
 
 type ViewerRow = {
@@ -16,6 +17,7 @@ type ViewerRow = {
   username: string;
   default_wishlist_id: number | null;
   notify_enabled: number;
+  preferred_currency: string;
 };
 
 function hashToken(token: string): string {
@@ -29,7 +31,7 @@ export async function getViewer(): Promise<Viewer | null> {
 
   const row = getDb()
     .prepare(
-      `SELECT u.id, u.username, u.default_wishlist_id, u.notify_enabled
+      `SELECT u.id, u.username, u.default_wishlist_id, u.notify_enabled, u.preferred_currency
        FROM sessions s JOIN users u ON u.id = s.user_id
        WHERE s.token_hash = ?`,
     )
@@ -41,6 +43,7 @@ export async function getViewer(): Promise<Viewer | null> {
     username: row.username,
     defaultWishlistId: row.default_wishlist_id,
     notifyEnabled: Boolean(row.notify_enabled),
+    preferredCurrency: row.preferred_currency || "GBP",
   };
 }
 

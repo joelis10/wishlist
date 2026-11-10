@@ -13,6 +13,7 @@ import {
   updateWishlist,
 } from "@/lib/wishlists";
 import { booleanFromForm, cleanText, parseEndDate, parseRecurrence } from "@/lib/validation";
+import { normalizeAccentColor } from "@/lib/accent";
 import { deleteUpload, ImageError, saveWishlistImage } from "@/lib/uploads";
 import type { FormState } from "@/lib/forms";
 
@@ -64,7 +65,13 @@ export async function updateWishlistAction(
   const description = cleanText(formData.get("description"), 2000) || null;
   const endDate = parseEndDate(formData.get("endDate"));
   const recurrence = endDate ? parseRecurrence(formData.get("recurrence")) : "none";
+  const useDefaultAccent = booleanFromForm(formData.get("useDefaultAccent"));
+  const rawAccent = cleanText(formData.get("accentColor"), 20);
+  const accentColor = useDefaultAccent || !rawAccent ? null : normalizeAccentColor(rawAccent);
   if (!title) return { error: "Give the wishlist a title." };
+  if (!useDefaultAccent && rawAccent && !accentColor) {
+    return { error: "Choose a valid accent colour." };
+  }
 
   const file = imageFile(formData);
   const removeImage = booleanFromForm(formData.get("removeImage"));
@@ -79,7 +86,14 @@ export async function updateWishlistAction(
       newImagePath = null;
     }
 
-    updateWishlist(id, { title, description, endDate, recurrence, imagePath: newImagePath });
+    updateWishlist(id, {
+      title,
+      description,
+      endDate,
+      recurrence,
+      imagePath: newImagePath,
+      accentColor,
+    });
 
     if (access.wishlist.imagePath && access.wishlist.imagePath !== newImagePath) {
       await deleteUpload(access.wishlist.imagePath);

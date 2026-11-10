@@ -33,6 +33,9 @@ export const config = {
   timezone: process.env.TZ || undefined,
   maxItemsPerWishlist: 1000,
   maxImageBytes: 8 * 1024 * 1024,
+  fx: {
+    cron: process.env.FX_CRON || "0 0 * * *",
+  },
   scrape: {
     enabled: bool(process.env.SCRAPE_ENABLED, true),
     cron: process.env.SCRAPE_CRON || "0 0 * * *",

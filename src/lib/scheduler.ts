@@ -1,5 +1,6 @@
 import cron from "node-cron";
 import { config } from "./env";
+import { refreshExchangeRates, refreshExchangeRatesIfStale } from "./currency";
 import { listItemsForScraping, updateItemFromScrape } from "./items";
 import { scrapeProductUrl } from "./scraper";
 import type { ScrapeResult } from "./scraper/types";
@@ -113,48 +114,85 @@ export async function runScrapeQueue(reason = "cron"): Promise<void> {
   }
 }
 
+function scheduleJob(
+  expression: string,
+  name: string,
+  fn: () => Promise<void>,
+): boolean {
+  if (!cron.validate(expression)) {
+    log(`Invalid cron expression for ${name}: ${expression}.`);
+    return false;
+  }
+  try {
+    cron.schedule(
+      expression,
+      async () => {
+        try {
+          await fn();
+        } catch (error) {
+          log(`${name} failed: ${error instanceof Error ? error.message : "unknown error"}`);
+        }
+      },
+      {
+        timezone: config.timezone,
+        noOverlap: true,
+        name,
+        unref: true,
+      },
+    );
+  } catch (error) {
+    log(
+      `${name} not scheduled: ${error instanceof Error ? error.message : "invalid configuration"}`,
+    );
+    return false;
+  }
+  return true;
+}
+
 export function startScheduler(): void {
   const g = globalThis as GlobalWithJob;
   if (g.__wishlistCronStarted) return;
   g.__wishlistCronStarted = true;
+
+  void refreshExchangeRatesIfStale()
+    .then((refreshed) => {
+      if (refreshed) log("Exchange rates refreshed.");
+    })
+    .catch((error) => {
+      log(
+        `Initial exchange-rate refresh failed: ${
+          error instanceof Error ? error.message : "unknown error"
+        }`,
+      );
+    });
+
+  if (
+    scheduleJob(config.fx.cron, "wishlist-exchange-rates", async () => {
+      await refreshExchangeRates();
+      log("Exchange rates refreshed.");
+    })
+  ) {
+    log(
+      `Exchange-rate refresh scheduled with "${config.fx.cron}"${
+        config.timezone ? ` (${config.timezone})` : ""
+      }.`,
+    );
+  }
 
   if (!config.scrape.enabled) {
     log("Price refresh is disabled (SCRAPE_ENABLED=false).");
     return;
   }
 
-  if (!cron.validate(config.scrape.cron)) {
-    log(`Invalid SCRAPE_CRON expression: ${config.scrape.cron}. Scheduler not started.`);
-    return;
-  }
-
-  try {
-    cron.schedule(
-      config.scrape.cron,
-      async () => {
-        try {
-          await runScrapeQueue("cron");
-        } catch (error) {
-          log(`Price refresh failed: ${error instanceof Error ? error.message : "unknown error"}`);
-        }
-      },
-      {
-        timezone: config.timezone,
-        noOverlap: true,
-        name: "wishlist-price-refresh",
-        unref: true,
-      },
-    );
-  } catch (error) {
+  if (
+    scheduleJob(config.scrape.cron, "wishlist-price-refresh", async () => {
+      await runScrapeQueue("cron");
+    })
+  ) {
     log(
-      `Scheduler not started: ${error instanceof Error ? error.message : "invalid configuration"}`,
+      `Price refresh scheduled with "${config.scrape.cron}"${
+        config.timezone ? ` (${config.timezone})` : ""
+      }.`,
     );
-    return;
   }
-
-  log(
-    `Price refresh scheduled with "${config.scrape.cron}"${
-      config.timezone ? ` (${config.timezone})` : ""
-    }.`,
-  );
 }
