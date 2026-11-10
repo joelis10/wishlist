@@ -1,6 +1,6 @@
 "use client";
 
-import { useDeferredValue, useMemo, useState } from "react";
+import { useDeferredValue, useEffect, useMemo, useState } from "react";
 import type { Item } from "@/lib/items";
 import { FilterIcon, SearchIcon } from "./icons";
 import { ItemCard } from "./item-card";
@@ -38,7 +38,12 @@ export function WishlistItems({
   const [sites, setSites] = useState<string[]>([]);
   const [sort, setSort] = useState<SortKey>("newest");
   const [filtersOpen, setFiltersOpen] = useState(false);
+  const [visibleCount, setVisibleCount] = useState(60);
   const deferredSearch = useDeferredValue(search);
+
+  useEffect(() => {
+    setVisibleCount(60);
+  }, [deferredSearch, minPrice, maxPrice, sites, sort]);
 
   const domains = useMemo(
     () =>
@@ -163,19 +168,32 @@ export function WishlistItems({
       ) : null}
 
       {filtered.length > 0 ? (
-        <div className="mt-4 space-y-3">
-          {filtered.map((item) => (
-            <ItemCard
-              key={item.id}
-              item={item}
-              wishlistId={wishlistId}
-              canEdit={canEdit}
-              canClaim={canClaim}
-              showClaims={showClaims}
-              viewerName={viewerName}
-            />
-          ))}
-        </div>
+        <>
+          <div className="mt-4 space-y-3">
+            {filtered.slice(0, visibleCount).map((item) => (
+              <ItemCard
+                key={item.id}
+                item={item}
+                wishlistId={wishlistId}
+                canEdit={canEdit}
+                canClaim={canClaim}
+                showClaims={showClaims}
+                viewerName={viewerName}
+              />
+            ))}
+          </div>
+          {filtered.length > visibleCount ? (
+            <div className="mt-4 flex justify-center">
+              <button
+                type="button"
+                className="btn btn-secondary btn-sm"
+                onClick={() => setVisibleCount((count) => count + 60)}
+              >
+                Show more ({filtered.length - visibleCount} remaining)
+              </button>
+            </div>
+          ) : null}
+        </>
       ) : (
         <div className="card mt-4 px-6 py-16 text-center">
           <h2 className="text-lg">{items.length === 0 ? "No items yet" : "No items match"}</h2>

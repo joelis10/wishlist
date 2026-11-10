@@ -128,18 +128,29 @@ export function startScheduler(): void {
     return;
   }
 
-  cron.schedule(
-    config.scrape.cron,
-    async () => {
-      await runScrapeQueue("cron");
-    },
-    {
-      timezone: config.timezone,
-      noOverlap: true,
-      name: "wishlist-price-refresh",
-      unref: true,
-    },
-  );
+  try {
+    cron.schedule(
+      config.scrape.cron,
+      async () => {
+        try {
+          await runScrapeQueue("cron");
+        } catch (error) {
+          log(`Price refresh failed: ${error instanceof Error ? error.message : "unknown error"}`);
+        }
+      },
+      {
+        timezone: config.timezone,
+        noOverlap: true,
+        name: "wishlist-price-refresh",
+        unref: true,
+      },
+    );
+  } catch (error) {
+    log(
+      `Scheduler not started: ${error instanceof Error ? error.message : "invalid configuration"}`,
+    );
+    return;
+  }
 
   log(
     `Price refresh scheduled with "${config.scrape.cron}"${
