@@ -41,7 +41,7 @@ export function CollaboratorManager({ wishlistId, ownerUsername, collaborators }
                 <input type="hidden" name="userId" value={person.userId} />
                 <button
                   type="submit"
-                  className="rounded-full p-2 text-muted transition hover:bg-raised hover:text-danger"
+                  className="rounded-full p-2 text-danger/80 transition hover:bg-danger/10 hover:text-danger"
                   aria-label={`Remove ${person.username}`}
                 >
                   <XIcon className="size-4" />

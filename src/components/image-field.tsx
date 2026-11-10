@@ -70,7 +70,7 @@ export function ImageField({ initialPath = null, allowRemove = false }: ImageFie
             />
           </label>
           {preview ? (
-            <button type="button" onClick={clear} className="btn btn-ghost btn-sm ml-1">
+            <button type="button" onClick={clear} className="btn btn-danger-ghost btn-sm ml-1">
               Remove
             </button>
           ) : null}

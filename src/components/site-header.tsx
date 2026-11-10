@@ -48,7 +48,7 @@ export async function SiteHeader() {
           )}
           <Link
             href="/settings"
-            className="rounded-full p-2 text-muted transition hover:bg-raised hover:text-ink"
+            className="rounded-full p-2 text-muted transition duration-200 hover:rotate-12 hover:bg-raised hover:text-ink"
             aria-label="Settings"
           >
             <SettingsIcon className="size-[18px]" />

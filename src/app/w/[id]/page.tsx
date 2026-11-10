@@ -97,6 +97,7 @@ export default async function WishlistPage({ params }: PageProps) {
     ? items
     : items.map((item) => ({
         ...item,
+        claimed: false,
         claimedAt: null,
         claimedByUserId: null,
         claimedByName: null,
@@ -176,6 +177,7 @@ export default async function WishlistPage({ params }: PageProps) {
           viewerName={viewer?.username ?? null}
           preferredCurrency={preferredCurrency}
           rates={rates}
+          showClaimedToggle={!access.isOwner}
         />
       </div>
 

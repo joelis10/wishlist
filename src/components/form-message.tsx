@@ -5,13 +5,13 @@ export function FormMessage({
 }) {
   if (state.error) {
     return (
-      <p role="alert" className="text-sm text-danger">
+      <p role="alert" className="animate-fade-in text-sm text-danger">
         {state.error}
       </p>
     );
   }
   if (state.message && state.ok) {
-    return <p className="text-sm text-muted">{state.message}</p>;
+    return <p className="animate-fade-in text-sm text-muted">{state.message}</p>;
   }
   return null;
 }

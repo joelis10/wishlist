@@ -1,26 +1,38 @@
 "use client";
 
-import { useActionState, useEffect, useState } from "react";
+import { useActionState, useState } from "react";
 import { setThemeAction } from "@/app/actions/settings";
 import { THEME_OPTIONS, type ThemePreference } from "@/lib/theme-shared";
 import { FormMessage } from "./form-message";
 import { SubmitButton } from "./submit-button";
 
+type TransitionDocument = Document & {
+  startViewTransition?: (callback: () => void) => { ready: Promise<void> };
+};
+
 function applyTheme(theme: ThemePreference) {
-  if (theme === "system") {
-    delete document.documentElement.dataset.theme;
+  const update = () => {
+    if (theme === "system") {
+      delete document.documentElement.dataset.theme;
+    } else {
+      document.documentElement.dataset.theme = theme;
+    }
+  };
+
+  const doc = document as TransitionDocument;
+  if (
+    doc.startViewTransition &&
+    !window.matchMedia("(prefers-reduced-motion: reduce)").matches
+  ) {
+    doc.startViewTransition(update);
   } else {
-    document.documentElement.dataset.theme = theme;
+    update();
   }
 }
 
 export function ThemeForm({ current }: { current: ThemePreference }) {
   const [state, action] = useActionState(setThemeAction, {});
   const [theme, setTheme] = useState<ThemePreference>(current);
-
-  useEffect(() => {
-    if (state.ok) applyTheme(theme);
-  }, [state, theme]);
 
   return (
     <form action={action} className="space-y-3">
@@ -32,7 +44,11 @@ export function ThemeForm({ current }: { current: ThemePreference }) {
           id="preferred-theme"
           name="theme"
           value={theme}
-          onChange={(event) => setTheme(event.target.value as ThemePreference)}
+          onChange={(event) => {
+            const next = event.target.value as ThemePreference;
+            setTheme(next);
+            applyTheme(next);
+          }}
           className="input flex-1"
         >
           {THEME_OPTIONS.map((option) => (

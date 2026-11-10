@@ -40,7 +40,6 @@ export const ItemCard = memo(function ItemCard({
   const [pending, setPending] = useState(false);
 
   const claimed = showClaims && Boolean(item.claimedAt);
-  const cardText = item.note || item.description;
   const price = formatPrice(item.priceCents, item.currency);
   const approxCents = approximateCents(
     item.priceCents,
@@ -110,7 +109,7 @@ export const ItemCard = memo(function ItemCard({
         aria-label={`View details for ${item.title}`}
         onClick={openView}
         onKeyDown={handleCardKeyDown}
-        className="card flex cursor-pointer gap-3 p-3 transition hover:border-accent/30 sm:gap-4 sm:p-4"
+        className="card flex cursor-pointer gap-3 p-3 transition duration-200 hover:-translate-y-0.5 hover:border-accent/30 hover:shadow-lift sm:gap-4 sm:p-4"
       >
         <div className="relative size-20 shrink-0 overflow-hidden rounded-xl bg-raised sm:size-24">
           <ImageIcon className="absolute inset-0 m-auto size-6 text-muted/50" />
@@ -137,18 +136,24 @@ export const ItemCard = memo(function ItemCard({
                 {item.title}
               </h3>
 
-              {cardText ? (
-                <p className="mt-0.5 line-clamp-2 text-sm leading-relaxed text-muted">{cardText}</p>
+              {item.note ? (
+                <p className="mt-0.5 line-clamp-2 border-l-2 border-accent/40 pl-2 text-sm italic leading-relaxed text-ink/80">
+                  {item.note}
+                </p>
+              ) : item.description ? (
+                <p className="mt-0.5 line-clamp-2 text-sm leading-relaxed text-muted">
+                  {item.description}
+                </p>
               ) : null}
 
               <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
                 {claimed ? (
-                  <span className="inline-flex items-center gap-1 rounded-full bg-accent/10 px-2 py-0.5 text-[11px] font-medium text-accent">
+                  <span className="animate-fade-in inline-flex items-center gap-1 rounded-full bg-accent/10 px-2 py-0.5 text-[11px] font-medium text-accent">
                     Claimed{item.claimedByName ? ` by ${item.claimedByName}` : ""}
                   </span>
                 ) : null}
                 {item.inStock === false ? (
-                  <span className="inline-flex items-center rounded-full bg-danger/10 px-2 py-0.5 text-[11px] font-medium text-danger">
+                  <span className="animate-fade-in inline-flex items-center rounded-full bg-danger/10 px-2 py-0.5 text-[11px] font-medium text-danger">
                     Out of stock
                   </span>
                 ) : null}

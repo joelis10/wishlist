@@ -17,7 +17,7 @@ export function ConfirmForm({
   action,
   hidden,
   triggerLabel,
-  triggerClassName = "btn btn-ghost btn-sm text-danger",
+  triggerClassName = "btn btn-danger-ghost btn-sm",
   title,
   description,
   confirmLabel = "Delete",

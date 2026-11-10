@@ -12,6 +12,7 @@ export type Item = {
   currency: string;
   imageUrl: string | null;
   domain: string | null;
+  claimed: boolean;
   claimedAt: string | null;
   claimedByUserId: number | null;
   claimedByName: string | null;
@@ -64,6 +65,7 @@ function mapItem(row: ItemRow): Item {
     currency: row.currency,
     imageUrl: row.image_url,
     domain: row.domain,
+    claimed: Boolean(row.claimed_at),
     claimedAt: row.claimed_at,
     claimedByUserId: row.claimed_by_user_id,
     claimedByName: row.claimed_by_name,

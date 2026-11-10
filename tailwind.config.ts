@@ -20,6 +20,7 @@ const config: Config = {
       },
       boxShadow: {
         soft: "0 1px 2px rgb(30 20 10 / 0.04), 0 8px 24px -12px rgb(30 20 10 / 0.12)",
+        lift: "0 4px 18px -10px rgb(30 20 10 / 0.18), 0 1px 2px rgb(30 20 10 / 0.04)",
       },
       maxWidth: {
         page: "68rem",

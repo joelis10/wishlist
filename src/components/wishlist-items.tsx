@@ -3,7 +3,7 @@
 import { useDeferredValue, useEffect, useMemo, useState } from "react";
 import { convertCents, type ExchangeRates } from "@/lib/fx";
 import type { Item } from "@/lib/items";
-import { FilterIcon, SearchIcon } from "./icons";
+import { ChevronDownIcon, FilterIcon, SearchIcon } from "./icons";
 import { ItemCard } from "./item-card";
 import { Modal } from "./modal";
 
@@ -18,6 +18,7 @@ type Props = {
   viewerName: string | null;
   preferredCurrency: string;
   rates: ExchangeRates | null;
+  showClaimedToggle: boolean;
 };
 
 function effectivePriceCents(
@@ -46,6 +47,7 @@ export function WishlistItems({
   viewerName,
   preferredCurrency,
   rates,
+  showClaimedToggle,
 }: Props) {
   const [search, setSearch] = useState("");
   const [minPrice, setMinPrice] = useState("");
@@ -53,12 +55,14 @@ export function WishlistItems({
   const [sites, setSites] = useState<string[]>([]);
   const [sort, setSort] = useState<SortKey>("newest");
   const [filtersOpen, setFiltersOpen] = useState(false);
+  const [showClaimed, setShowClaimed] = useState(true);
   const [visibleCount, setVisibleCount] = useState(60);
   const deferredSearch = useDeferredValue(search);
+  const claimedFilterActive = showClaimedToggle && !showClaimed;
 
   useEffect(() => {
     setVisibleCount(60);
-  }, [deferredSearch, minPrice, maxPrice, sites, sort]);
+  }, [deferredSearch, minPrice, maxPrice, sites, sort, claimedFilterActive]);
 
   const domains = useMemo(
     () =>
@@ -75,6 +79,7 @@ export function WishlistItems({
     const selected = new Set(sites);
 
     const result = items.filter((item) => {
+      if (claimedFilterActive && item.claimed) return false;
       if (query) {
         const haystack = [item.title, item.description, item.note, item.domain]
           .filter(Boolean)
@@ -122,11 +127,13 @@ export function WishlistItems({
     });
 
     return result;
-  }, [items, deferredSearch, minPrice, maxPrice, sites, sort, preferredCurrency, rates]);
+  }, [items, deferredSearch, minPrice, maxPrice, sites, sort, preferredCurrency, rates, claimedFilterActive]);
 
   const activeFilters =
     (minPrice.trim() ? 1 : 0) + (maxPrice.trim() ? 1 : 0) + sites.length;
-  const hasFiltered = search.trim() || activeFilters > 0;
+  const hasFiltered = Boolean(search.trim()) || activeFilters > 0 || claimedFilterActive;
+  const allRemainingClaimed =
+    claimedFilterActive && items.length > 0 && items.every((item) => item.claimed);
 
   function toggleSite(domain: string) {
     setSites((current) =>
@@ -150,15 +157,31 @@ export function WishlistItems({
             type="search"
             value={search}
             onChange={(event) => setSearch(event.target.value)}
-            className="input pl-10"
+            className="toolbar-pill w-full py-0 pl-10 pr-4 outline-none placeholder:text-muted/70"
             placeholder="Search items"
             aria-label="Search items"
           />
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          {showClaimedToggle ? (
+            <label className="toolbar-pill inline-flex cursor-pointer items-center gap-2.5 px-3.5 text-muted hover:text-ink">
+              <span className="relative inline-flex h-5 w-9 shrink-0 items-center">
+                <input
+                  type="checkbox"
+                  role="switch"
+                  checked={showClaimed}
+                  onChange={(event) => setShowClaimed(event.target.checked)}
+                  className="peer absolute inset-0 z-10 cursor-pointer opacity-0"
+                />
+                <span className="pointer-events-none absolute inset-0 rounded-full bg-line transition-colors peer-checked:bg-accent" />
+                <span className="pointer-events-none absolute left-0.5 top-0.5 size-4 rounded-full bg-white shadow-sm ring-1 ring-black/10 transition-transform peer-checked:translate-x-4" />
+              </span>
+              Show claimed
+            </label>
+          ) : null}
           <button
             type="button"
-            className="btn btn-secondary btn-sm"
+            className="btn btn-secondary h-10 px-4 text-[13px]"
             onClick={() => setFiltersOpen(true)}
           >
             <FilterIcon className="size-4" />
@@ -169,18 +192,21 @@ export function WishlistItems({
               </span>
             ) : null}
           </button>
-          <select
-            value={sort}
-            onChange={(event) => setSort(event.target.value as SortKey)}
-            className="input w-auto py-1.5 text-[13px]"
-            aria-label="Sort items"
-          >
-            <option value="newest">Newest first</option>
-            <option value="oldest">Oldest first</option>
-            <option value="price-asc">Price: low to high</option>
-            <option value="price-desc">Price: high to low</option>
-            <option value="domain">Site: A–Z</option>
-          </select>
+          <div className="relative">
+            <select
+              value={sort}
+              onChange={(event) => setSort(event.target.value as SortKey)}
+              className="toolbar-pill w-auto cursor-pointer appearance-none py-0 pl-3.5 pr-9 outline-none"
+              aria-label="Sort items"
+            >
+              <option value="newest">Newest first</option>
+              <option value="oldest">Oldest first</option>
+              <option value="price-asc">Price: low to high</option>
+              <option value="price-desc">Price: high to low</option>
+              <option value="domain">Site: A–Z</option>
+            </select>
+            <ChevronDownIcon className="pointer-events-none absolute right-3 top-1/2 size-4 -translate-y-1/2 text-muted" />
+          </div>
         </div>
       </div>
 
@@ -192,7 +218,7 @@ export function WishlistItems({
 
       {filtered.length > 0 ? (
         <>
-          <div className="mt-4 space-y-3">
+          <div className="stagger-list mt-4 space-y-3">
             {filtered.slice(0, visibleCount).map((item) => (
               <ItemCard
                 key={item.id}
@@ -236,9 +262,10 @@ export function WishlistItems({
               onClick={() => {
                 setSearch("");
                 clearFilters();
+                setShowClaimed(true);
               }}
             >
-              Clear search and filters
+              Reset view
             </button>
           ) : null}
         </div>

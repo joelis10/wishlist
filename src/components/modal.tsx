@@ -61,7 +61,7 @@ export function Modal({
         if (dismissible && event.target === ref.current) onClose();
       }}
     >
-      <div className="flex max-h-[85vh] flex-col">
+      <div className="modal-panel flex max-h-[85vh] flex-col">
         {title ? (
           <div className="flex items-start justify-between gap-4 px-5 pb-2 pt-5">
             <h2 id={titleId} className="pr-2 text-xl">
