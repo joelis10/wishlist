@@ -34,11 +34,7 @@ export function Modal({
   useEffect(() => {
     if (!open) return;
     const dialog = ref.current;
-    if (!dialog) return;
-    if (!dialog.open) dialog.showModal();
-    return () => {
-      if (dialog.open) dialog.close();
-    };
+    if (dialog && !dialog.open) dialog.showModal();
   }, [open]);
 
   useEffect(() => {
