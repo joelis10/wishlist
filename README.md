@@ -5,9 +5,17 @@ A small, self-hosted wishlist app. One container, one SQLite database, no extern
 <details>
 <summary>Screenshots</summary>
 
+**Light**
+
 ![Wishlist browse page with three public wishlists](docs/screenshots/browse.jpg)
 
 ![Wishlist page with a hero image, item cards, prices and claim buttons](docs/screenshots/wishlist.jpg)
+
+**Dark**
+
+![Dark wishlist browse page](docs/screenshots/browse-dark.jpg)
+
+![Dark wishlist page](docs/screenshots/wishlist-dark.jpg)
 
 </details>
 
@@ -18,6 +26,7 @@ A small, self-hosted wishlist app. One container, one SQLite database, no extern
 - Items added from a product link. An on-demand scraper suggests title, description, price and images with available alt/title labels; every suggestion can be selected or ignored before the item is saved.
 - Optional official eBay Browse API support, since eBay blocks direct page scraping.
 - Approximate display-currency conversions. GBP is the default; guests and signed-in users can choose another currency in Settings. Price filters use the converted value.
+- Light, dark or system theme. Guests keep it in a cookie; signed-in users keep it on their account across devices.
 - Guest claims with a name, plus a spoiler prompt before a wishlist opens.
 - Installable PWA with Android share-sheet support. No native Android app is needed.
 - Web Push registration and a test notification.

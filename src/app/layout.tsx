@@ -1,5 +1,7 @@
 import type { Metadata, Viewport } from "next";
+import { getViewer } from "@/lib/auth";
 import { config } from "@/lib/env";
+import { getPreferredTheme } from "@/lib/theme";
 import { ServiceWorkerRegister } from "@/components/service-worker-register";
 import { SiteHeader } from "@/components/site-header";
 import "./globals.css";
@@ -48,9 +50,12 @@ export const viewport: Viewport = {
   ],
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  const viewer = await getViewer();
+  const theme = await getPreferredTheme(viewer);
+
   return (
-    <html lang="en">
+    <html lang="en" data-theme={theme === "system" ? undefined : theme}>
       <body>
         <SiteHeader />
         <main className="min-h-[calc(100dvh-4rem)]">{children}</main>

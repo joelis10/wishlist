@@ -127,6 +127,24 @@ function migrate(db: DatabaseSync) {
 
       db.exec("PRAGMA user_version = 2;");
       db.exec("COMMIT");
+      version = 2;
+    } catch (error) {
+      db.exec("ROLLBACK");
+      throw error;
+    }
+  }
+
+  if (version < 3) {
+    db.exec("BEGIN");
+    try {
+      const userColumns = db.prepare("PRAGMA table_info(users)").all() as unknown as {
+        name: string;
+      }[];
+      if (!userColumns.some((column) => column.name === "theme")) {
+        db.exec("ALTER TABLE users ADD COLUMN theme TEXT NOT NULL DEFAULT 'system';");
+      }
+      db.exec("PRAGMA user_version = 3;");
+      db.exec("COMMIT");
     } catch (error) {
       db.exec("ROLLBACK");
       throw error;

@@ -10,6 +10,8 @@ import {
 import { getDb } from "@/lib/db";
 import { CURRENCY_COOKIE } from "@/lib/fx";
 import { CURRENCIES } from "@/lib/money";
+import { savePreferredTheme, themeCookieOptions } from "@/lib/theme";
+import { THEME_COOKIE, normalizeTheme } from "@/lib/theme-shared";
 import { getWishlistAccess } from "@/lib/wishlists";
 import type { FormState } from "@/lib/forms";
 
@@ -54,4 +56,16 @@ export async function setPreferredCurrencyAction(
   cookieStore.set(CURRENCY_COOKIE, currency, currencyCookieOptions());
   revalidatePath("/settings");
   return { ok: true, message: "Currency updated." };
+}
+
+
+export async function setThemeAction(_state: FormState, formData: FormData): Promise<FormState> {
+  const theme = normalizeTheme(formData.get("theme"));
+  const viewer = await getViewer();
+  if (viewer) savePreferredTheme(viewer.id, theme);
+
+  const cookieStore = await cookies();
+  cookieStore.set(THEME_COOKIE, theme, themeCookieOptions());
+  revalidatePath("/", "layout");
+  return { ok: true, message: "Theme updated." };
 }

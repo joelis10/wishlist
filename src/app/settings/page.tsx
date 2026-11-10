@@ -3,9 +3,11 @@ import { getViewer } from "@/lib/auth";
 import { logoutAction } from "@/app/actions/auth";
 import { getPreferredCurrency } from "@/lib/currency";
 import { getPublicVapidKey } from "@/lib/push";
+import { getPreferredTheme } from "@/lib/theme";
 import { listMyWishlists } from "@/lib/wishlists";
 import { LogoutIcon } from "@/components/icons";
 import { CurrencyForm } from "@/components/currency-form";
+import { ThemeForm } from "@/components/theme-form";
 import { DefaultWishlistForm } from "@/components/default-wishlist-form";
 import { NotificationSettings } from "@/components/notification-settings";
 import { PasswordForm } from "@/components/password-form";
@@ -17,6 +19,7 @@ export const metadata = { title: "Settings" };
 export default async function SettingsPage() {
   const viewer = await getViewer();
   const preferredCurrency = await getPreferredCurrency(viewer);
+  const preferredTheme = await getPreferredTheme(viewer);
   const wishlists = viewer ? listMyWishlists(viewer.id) : [];
   const publicKey = viewer ? getPublicVapidKey() : "";
 
@@ -25,6 +28,11 @@ export default async function SettingsPage() {
       <h1 className="text-3xl">Settings</h1>
 
       <section className="mt-9 border-t border-line pt-7">
+        <h2 className="mb-4 text-xl">Appearance</h2>
+        <ThemeForm current={preferredTheme} />
+      </section>
+
+      <section className="mt-12 border-t border-line pt-7">
         <h2 className="mb-4 text-xl">Currency</h2>
         <CurrencyForm current={preferredCurrency} />
       </section>

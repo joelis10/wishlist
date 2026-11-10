@@ -15,7 +15,7 @@
 }
 
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-theme="light"]) {
     --bg: 23 20 18;
     --surface: 32 28 25;
     --raised: 44 38 34;
@@ -25,7 +25,25 @@
     --accent: 226 96 128;
     --accent-ink: 34 18 23;
     --danger: 238 115 104;
+    color-scheme: dark;
   }
+}
+
+:root[data-theme="dark"] {
+  --bg: 23 20 18;
+  --surface: 32 28 25;
+  --raised: 44 38 34;
+  --ink: 241 235 229;
+  --muted: 168 155 145;
+  --line: 62 54 48;
+  --accent: 226 96 128;
+  --accent-ink: 34 18 23;
+  --danger: 238 115 104;
+  color-scheme: dark;
+}
+
+:root[data-theme="light"] {
+  color-scheme: light;
 }
 
 @layer base {
