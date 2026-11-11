@@ -30,6 +30,10 @@ export default async function EditItemPage({ params }: PageProps) {
   const item = getItem(itemId);
   if (!item || item.wishlistId !== wishlist.id) notFound();
 
+  // Keep claims hidden from the owner. Editors can still see and clear them.
+  const claimedByName =
+    !access.isOwner && item.claimedAt ? item.claimedByName : null;
+
   return (
     <div
       className="container-page max-w-2xl pb-20 pt-8 sm:pt-10"
@@ -47,7 +51,7 @@ export default async function EditItemPage({ params }: PageProps) {
         itemId={item.id}
         mode="edit"
         cancelHref={`/w/${slug}`}
-        claimedByName={item.claimedAt ? item.claimedByName : null}
+        claimedByName={claimedByName}
         defaults={{
           title: item.title,
           url: item.url || "",
