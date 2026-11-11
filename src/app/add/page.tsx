@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { requireViewer } from "@/lib/auth";
-import { listMyWishlists } from "@/lib/wishlists";
+import { listEditableWishlists } from "@/lib/wishlists";
 import { GiftIcon, PlusIcon } from "@/components/icons";
 
 export const dynamic = "force-dynamic";
@@ -15,10 +15,10 @@ export default async function AddPickerPage({ searchParams }: PageProps) {
   const url = typeof query.url === "string" ? query.url.slice(0, 2000) : "";
   const nextPath = `/add${url ? `?url=${encodeURIComponent(url)}` : ""}`;
   const viewer = await requireViewer(nextPath);
-  const wishlists = listMyWishlists(viewer.id);
+  const wishlists = listEditableWishlists(viewer.id);
 
   if (wishlists.length === 1 && url) {
-    redirect(`/w/${wishlists[0].id}/add?url=${encodeURIComponent(url)}`);
+    redirect(`/w/${wishlists[0].slug}/add?url=${encodeURIComponent(url)}`);
   }
 
   const suffix = url ? `?url=${encodeURIComponent(url)}` : "";
@@ -32,7 +32,7 @@ export default async function AddPickerPage({ searchParams }: PageProps) {
           {wishlists.map((wishlist) => (
             <li key={wishlist.id}>
               <Link
-                href={`/w/${wishlist.id}/add${suffix}`}
+                href={`/w/${wishlist.slug}/add${suffix}`}
                 className="flex items-center justify-between gap-4 px-4 py-3.5 transition hover:bg-raised"
               >
                 <span className="min-w-0">

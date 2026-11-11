@@ -2,8 +2,8 @@ export function claimsCookieName(wishlistId: number): string {
   return `wishlist_claims_${wishlistId}`;
 }
 
-export function claimsCookiePath(wishlistId: number): string {
-  return `/w/${wishlistId}`;
+export function claimsCookiePath(slug: string): string {
+  return `/w/${slug}`;
 }
 
 export type ClaimsMode = "owner" | "guest" | "unknown";

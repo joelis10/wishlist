@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getViewer } from "@/lib/auth";
 import { config } from "@/lib/env";
-import { getWishlistAccess } from "@/lib/wishlists";
+import { getWishlist, getWishlistAccess } from "@/lib/wishlists";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -32,9 +32,10 @@ export async function GET(request: NextRequest) {
 
   if (viewer.defaultWishlistId) {
     const access = getWishlistAccess(viewer.defaultWishlistId, viewer.id);
-    if (access?.canEditItems) {
+    const wishlist = getWishlist(viewer.defaultWishlistId);
+    if (access?.canEditItems && wishlist) {
       const suffix = sharedUrl ? `?url=${encodeURIComponent(sharedUrl)}` : "";
-      return redirectTo(`/w/${viewer.defaultWishlistId}/add${suffix}`);
+      return redirectTo(`/w/${wishlist.slug}/add${suffix}`);
     }
   }
 

@@ -14,6 +14,7 @@ import { Modal } from "./modal";
 type Props = {
   item: Item;
   wishlistId: number;
+  wishlistSlug: string;
   canEdit: boolean;
   canClaim: boolean;
   showClaims: boolean;
@@ -25,6 +26,7 @@ type Props = {
 export const ItemCard = memo(function ItemCard({
   item,
   wishlistId,
+  wishlistSlug,
   canEdit,
   canClaim,
   showClaims,
@@ -201,7 +203,7 @@ export const ItemCard = memo(function ItemCard({
                 ) : null}
                 {canEdit ? (
                   <Link
-                    href={`/w/${wishlistId}/items/${item.id}/edit`}
+                    href={`/w/${wishlistSlug}/items/${item.id}/edit`}
                     onClick={(event) => event.stopPropagation()}
                     className="btn btn-ghost btn-sm w-full"
                   >

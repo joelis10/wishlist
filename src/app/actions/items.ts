@@ -75,15 +75,15 @@ function parseItemForm(formData: FormData): ParsedItem {
   };
 }
 
-function revalidateWishlist(id: number): void {
-  revalidatePath(`/w/${id}`);
+function revalidateWishlist(slug: string): void {
+  revalidatePath(`/w/${slug}`);
   revalidatePath("/");
-  revalidatePath("/wishlists");
+  revalidatePath("/shared");
 }
 
 export async function addItemAction(_state: FormState, formData: FormData): Promise<FormState> {
   const wishlistId = Number(formData.get("wishlistId"));
-  const viewer = await requireViewer(`/w/${wishlistId}/add`);
+  const viewer = await requireViewer("/");
   const access = getWishlistAccess(wishlistId, viewer.id);
   if (!access?.canEditItems) return { error: "You cannot add items to this wishlist." };
 
@@ -93,14 +93,14 @@ export async function addItemAction(_state: FormState, formData: FormData): Prom
   const result = addItem(wishlistId, parsed.input);
   if (!result.ok) return { error: result.error };
 
-  revalidateWishlist(wishlistId);
-  redirect(`/w/${wishlistId}`);
+  revalidateWishlist(access.wishlist.slug);
+  redirect(`/w/${access.wishlist.slug}`);
 }
 
 export async function updateItemAction(_state: FormState, formData: FormData): Promise<FormState> {
   const wishlistId = Number(formData.get("wishlistId"));
   const itemId = Number(formData.get("itemId"));
-  const viewer = await requireViewer(`/w/${wishlistId}`);
+  const viewer = await requireViewer("/");
   const access = getWishlistAccess(wishlistId, viewer.id);
   if (!access?.canEditItems) return { error: "You cannot edit this wishlist." };
 
@@ -112,14 +112,14 @@ export async function updateItemAction(_state: FormState, formData: FormData): P
 
   const unclaim = formData.get("unclaim") === "on";
   updateItem(itemId, wishlistId, parsed.input, { unclaim });
-  revalidateWishlist(wishlistId);
-  redirect(`/w/${wishlistId}`);
+  revalidateWishlist(access.wishlist.slug);
+  redirect(`/w/${access.wishlist.slug}`);
 }
 
 export async function deleteItemAction(formData: FormData): Promise<void> {
   const wishlistId = Number(formData.get("wishlistId"));
   const itemId = Number(formData.get("itemId"));
-  const viewer = await requireViewer(`/w/${wishlistId}`);
+  const viewer = await requireViewer("/");
   const access = getWishlistAccess(wishlistId, viewer.id);
   if (!access?.canEditItems) return;
 
@@ -127,14 +127,14 @@ export async function deleteItemAction(formData: FormData): Promise<void> {
   if (!item || item.wishlistId !== wishlistId) return;
 
   deleteItem(itemId, wishlistId);
-  revalidateWishlist(wishlistId);
-  redirect(`/w/${wishlistId}`);
+  revalidateWishlist(access.wishlist.slug);
+  redirect(`/w/${access.wishlist.slug}`);
 }
 
 export async function unclaimItemAction(formData: FormData): Promise<void> {
   const wishlistId = Number(formData.get("wishlistId"));
   const itemId = Number(formData.get("itemId"));
-  const viewer = await requireViewer(`/w/${wishlistId}`);
+  const viewer = await requireViewer("/");
   const access = getWishlistAccess(wishlistId, viewer.id);
   if (!access?.canEditItems) return;
 
@@ -142,7 +142,7 @@ export async function unclaimItemAction(formData: FormData): Promise<void> {
   if (!item || item.wishlistId !== wishlistId) return;
 
   unclaimItem(itemId, wishlistId);
-  revalidateWishlist(wishlistId);
+  revalidateWishlist(access.wishlist.slug);
 }
 
 export async function claimItemAction(
@@ -169,6 +169,6 @@ export async function claimItemAction(
   const claimed = claimItem(itemId, wishlistId, name, viewer?.id ?? null);
   if (!claimed) return { ok: false, error: "Someone has already claimed this item." };
 
-  revalidatePath(`/w/${wishlistId}`);
+  revalidatePath(`/w/${access.wishlist.slug}`);
   return { ok: true };
 }

@@ -7,13 +7,17 @@ A small, self-hosted wishlist app. One container, one SQLite database, no extern
 
 **Light**
 
-![Wishlist browse page with three public wishlists](docs/screenshots/browse.jpg)
+![My wishlists page showing three wishlist cards](docs/screenshots/home.jpg)
+
+![Shared with me page with the browser-only note and a saved wishlist](docs/screenshots/shared.jpg)
 
 ![Wishlist page with a hero image, item cards, prices and claim buttons](docs/screenshots/wishlist.jpg)
 
 **Dark**
 
-![Dark wishlist browse page](docs/screenshots/browse-dark.jpg)
+![Dark My wishlists page](docs/screenshots/home-dark.jpg)
+
+![Dark Shared with me page](docs/screenshots/shared-dark.jpg)
 
 ![Dark wishlist page](docs/screenshots/wishlist-dark.jpg)
 
@@ -21,7 +25,9 @@ A small, self-hosted wishlist app. One container, one SQLite database, no extern
 
 ## What's included
 
-- Accounts with persistent sessions, public wishlists, owner-managed editors, and private wishlists that only the owner and editors can open.
+- Accounts with persistent sessions and a private set of wishlists. Nothing is published to a central directory.
+- Every wishlist has a secret, unguessable link from the moment it is created. Share the link, or share directly with another account as **View only** or **Can edit**.
+- Direct shares appear in **Shared with me** immediately and send a notification when the recipient has notifications enabled.
 - Wishlist images, descriptions, custom accent colours, optional recurring end dates, item search, price/site filters and sorting.
 - Items added from a product link. An on-demand scraper suggests title, description, price and images with available alt/title labels; every suggestion can be selected or ignored before the item is saved.
 - Optional official eBay Browse API support, since eBay blocks direct page scraping.
@@ -30,9 +36,9 @@ A small, self-hosted wishlist app. One container, one SQLite database, no extern
 - Guest claims with a name, plus a spoiler prompt before a wishlist opens.
 - A **Show claimed** filter on wishlists you don't own, with claimed items visible by default.
 - Installable PWA with Android share-sheet support. No native Android app is needed.
-- Web Push registration and a test notification.
+- Web Push registration, a test notification and direct-share notifications.
 - Daily background jobs for price/stock refreshes and exchange rates.
-- Link previews with the wishlist photo, title and item count.
+- Link previews with the wishlist photo, title and item count. Wishlist pages are marked `noindex` and are not listed anywhere.
 
 ## Quick start
 
@@ -42,7 +48,7 @@ cp .env.example .env
 docker compose up -d --build
 ```
 
-Open the app and create the first account. Then create a wishlist. It stays private until you open **Settings → Visibility → Make public**.
+Open the app and create the first account. Create a wishlist, then open the **Share** button or **Wishlist settings** to copy its secret link. Send that link to anyone, or add a username directly with view-only or edit access.
 
 The SQLite database and uploaded images live in the `wishlist-data` Docker volume. Uploaded images are served from `/uploads`; no external storage is needed. If you replace the named volume with a bind mount, make sure the container user (UID 1000) can write to it.
 
@@ -54,12 +60,19 @@ If you expose the container directly, set `APP_PORT` and use `http://server-ip:3
 
 ## Using it
 
-- **Public wishlists** appear on the browse page and can be opened by anyone. **Private wishlists** can only be opened by the owner and people they add.
-- A guest link is only available once a wishlist is public. Editors can add and edit items, but only the owner can change visibility, collaborators or delete the wishlist.
+- **My wishlists** is the home screen for signed-in users and contains the lists they own. **Shared with me** is a separate page in the header. Guests land on **Shared with me** and can sign in or register from there.
+- Every wishlist has a secret link from creation. The link is random and unguessable, and the wishlist is never listed publicly. Anyone with the link can view the list.
+- Signed-in users who open a shared link save it to **Shared with me** automatically. Guests save it in their browser instead; a short note explains that those saves are browser-only until they sign in or register, and they move into the account when they do.
+- Direct shares can be **View only** or **Can edit**. Viewers can open the list and claim items. Editors can also add and edit items. Only the owner can change wishlist details, manage shares or delete the wishlist.
+- If the recipient has notifications enabled, sharing a wishlist with them sends a notification with the wishlist link.
 - On the first visit to a wishlist, guests are asked whether it belongs to them. Owners get a spoiler-free view; buyers see claims.
 - Claiming an item requires a name so other guests know it has been bought. Claims are atomic: two people cannot claim the same item.
 - On wishlists you do not own, **Show claimed** toggles bought items in or out of the list. It defaults to on and is hidden on your own wishlists.
 - Item descriptions are replaced on the card by a custom note when one exists. **View item** opens the full note, description and a link to the original page.
+
+### Upgrading from an earlier version
+
+Wishlist links now use a secret slug instead of the numeric ID, so old `/w/<number>` URLs stop working after the database migration. Open each wishlist you still need to share and copy its new link from the wishlist page or **Wishlist settings**. Existing collaborators are migrated to **Can edit** direct shares.
 
 ## Configuration
 
@@ -126,7 +139,7 @@ On Android, open the site in Chrome and choose **Install app** or **Add to Home 
 
 iOS can install the PWA, but iOS does not support web share targets, so the share-sheet shortcut is Android-only. No native app is required or included.
 
-Enable notifications per device in **Settings → Notifications**. The switch registers the service worker and stores a push subscription. A test notification is available. Actual notification events are intentionally not wired up yet; the delivery infrastructure is ready for whatever you want to send later.
+Enable notifications per device in **Settings → Notifications**. The switch registers the service worker and stores a push subscription. A test notification is available. When another account shares a wishlist with you directly, the app sends a notification with a link to it, provided notifications are enabled for your account.
 
 ## Backups
 

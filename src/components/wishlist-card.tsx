@@ -11,7 +11,7 @@ export function WishlistCard({
 }) {
   return (
     <Link
-      href={`/w/${wishlist.id}`}
+      href={`/w/${wishlist.slug}`}
       className="group block transition-transform duration-200 ease-out hover:-translate-y-0.5"
     >
       <div className="relative aspect-[16/10] overflow-hidden rounded-2xl border border-line bg-raised transition-shadow duration-200 group-hover:shadow-lift">

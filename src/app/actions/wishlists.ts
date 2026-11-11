@@ -2,17 +2,22 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { requireViewer } from "@/lib/auth";
+import { getViewer, requireViewer } from "@/lib/auth";
+import { addGuestWishlistSlug } from "@/lib/guest-shares";
+import { notifyUserIfEnabled } from "@/lib/push";
 import {
-  addCollaborator,
   createWishlist,
   deleteWishlist,
   getWishlistAccess,
-  removeCollaborator,
-  setWishlistPublic,
+  getWishlistBySlug,
+  removeShare,
+  saveWishlistForUser,
+  shareWishlist,
   updateWishlist,
+  type SharePermission,
 } from "@/lib/wishlists";
 import { booleanFromForm, cleanText, parseEndDate, parseRecurrence } from "@/lib/validation";
+import { isShareSlug } from "@/lib/slugs";
 import { normalizeAccentColor } from "@/lib/accent";
 import { deleteUpload, ImageError, saveWishlistImage } from "@/lib/uploads";
 import type { FormState } from "@/lib/forms";
@@ -21,6 +26,13 @@ function imageFile(formData: FormData): File | null {
   const file = formData.get("image");
   if (file instanceof File && file.size > 0) return file;
   return null;
+}
+
+function revalidateWishlist(slug: string) {
+  revalidatePath(`/w/${slug}`);
+  revalidatePath(`/w/${slug}/settings`);
+  revalidatePath("/");
+  revalidatePath("/shared");
 }
 
 export async function createWishlistAction(
@@ -36,11 +48,11 @@ export async function createWishlistAction(
   if (!title) return { error: "Give the wishlist a title." };
 
   let imagePath: string | null = null;
-  let id: number;
+  let created: { id: number; slug: string };
   try {
     const file = imageFile(formData);
     if (file) imagePath = await saveWishlistImage(file);
-    id = createWishlist(viewer.id, { title, description, endDate, recurrence, imagePath });
+    created = createWishlist(viewer.id, { title, description, endDate, recurrence, imagePath });
   } catch (error) {
     if (imagePath) await deleteUpload(imagePath);
     if (error instanceof ImageError) return { error: error.message };
@@ -48,15 +60,14 @@ export async function createWishlistAction(
   }
 
   revalidatePath("/");
-  revalidatePath("/wishlists");
-  redirect(`/w/${id}/settings`);
+  redirect(`/w/${created.slug}/settings`);
 }
 
 export async function updateWishlistAction(
   _state: FormState,
   formData: FormData,
 ): Promise<FormState> {
-  const viewer = await requireViewer("/wishlists");
+  const viewer = await requireViewer("/");
   const id = Number(formData.get("wishlistId"));
   const access = getWishlistAccess(id, viewer.id);
   if (!access?.canManage) return { error: "Only the owner can change wishlist settings." };
@@ -99,10 +110,7 @@ export async function updateWishlistAction(
       await deleteUpload(access.wishlist.imagePath);
     }
 
-    revalidatePath(`/w/${id}`);
-    revalidatePath(`/w/${id}/settings`);
-    revalidatePath("/");
-    revalidatePath("/wishlists");
+    revalidateWishlist(access.wishlist.slug);
     return { ok: true, message: "Saved." };
   } catch (error) {
     if (uploaded) await deleteUpload(uploaded);
@@ -111,58 +119,77 @@ export async function updateWishlistAction(
   }
 }
 
-export async function setWishlistPublicAction(formData: FormData): Promise<void> {
-  const viewer = await requireViewer("/wishlists");
-  const id = Number(formData.get("wishlistId"));
-  const makePublic = booleanFromForm(formData.get("isPublic"));
-  const access = getWishlistAccess(id, viewer.id);
-  if (!access?.canManage) return;
-
-  setWishlistPublic(id, makePublic);
-  revalidatePath(`/w/${id}`);
-  revalidatePath(`/w/${id}/settings`);
-  revalidatePath("/");
-  revalidatePath("/wishlists");
-}
-
 export async function deleteWishlistAction(formData: FormData): Promise<void> {
-  const viewer = await requireViewer("/wishlists");
+  const viewer = await requireViewer("/");
   const id = Number(formData.get("wishlistId"));
   const access = getWishlistAccess(id, viewer.id);
   if (!access?.canManage) return;
 
+  const slug = access.wishlist.slug;
   const imagePath = deleteWishlist(id);
   if (imagePath) await deleteUpload(imagePath);
   revalidatePath("/");
-  revalidatePath("/wishlists");
-  redirect("/wishlists");
+  revalidatePath("/shared");
+  revalidatePath(`/w/${slug}`);
+  redirect("/");
 }
 
-export async function addCollaboratorAction(
+export async function shareWishlistAction(
   _state: FormState,
   formData: FormData,
 ): Promise<FormState> {
-  const viewer = await requireViewer("/wishlists");
+  const viewer = await requireViewer("/");
   const id = Number(formData.get("wishlistId"));
   const access = getWishlistAccess(id, viewer.id);
-  if (!access?.canManage) return { error: "Only the owner can share edit access." };
+  if (!access?.canManage) return { error: "Only the owner can share this wishlist." };
 
   const username = cleanText(formData.get("username"), 32).replace(/^@/, "");
+  const permission: SharePermission =
+    formData.get("permission") === "edit" ? "edit" : "view";
   if (!username) return { error: "Enter a username." };
 
-  const result = addCollaborator(id, username);
+  const result = shareWishlist(id, username, permission);
   if (!result.ok) return { error: result.error };
-  revalidatePath(`/w/${id}/settings`);
-  return { ok: true, message: `${username} can now edit this wishlist.` };
+
+  if (result.created) {
+    await notifyUserIfEnabled(result.userId, {
+      title: "Wishlist shared with you",
+      body: `${viewer.username} shared “${access.wishlist.title}” with you.`,
+      url: `/w/${access.wishlist.slug}`,
+    });
+  }
+
+  revalidatePath(`/w/${access.wishlist.slug}/settings`);
+  return {
+    ok: true,
+    message: result.created
+      ? `Shared with ${result.username} (${permission === "edit" ? "can edit" : "view only"}).`
+      : `Updated ${result.username}'s access.`,
+  };
 }
 
-export async function removeCollaboratorAction(formData: FormData): Promise<void> {
-  const viewer = await requireViewer("/wishlists");
+export async function removeShareAction(formData: FormData): Promise<void> {
+  const viewer = await requireViewer("/");
   const id = Number(formData.get("wishlistId"));
   const userId = Number(formData.get("userId"));
   const access = getWishlistAccess(id, viewer.id);
   if (!access?.canManage) return;
 
-  removeCollaborator(id, userId);
-  revalidatePath(`/w/${id}/settings`);
+  removeShare(id, userId);
+  revalidatePath(`/w/${access.wishlist.slug}/settings`);
+  revalidatePath("/shared");
+}
+
+export async function rememberWishlistAction(slug: string): Promise<void> {
+  if (!isShareSlug(slug)) return;
+  const wishlist = getWishlistBySlug(slug);
+  if (!wishlist) return;
+
+  const viewer = await getViewer();
+  if (viewer) {
+    if (wishlist.ownerId === viewer.id) return;
+    saveWishlistForUser(viewer.id, wishlist.id);
+  } else {
+    await addGuestWishlistSlug(slug);
+  }
 }

@@ -8,6 +8,7 @@ import { checkRateLimit } from "@/lib/rate-limit";
 import { passwordSchema, usernameSchema } from "@/lib/validation";
 import type { FormState } from "@/lib/forms";
 import { config } from "@/lib/env";
+import { migrateGuestWishlistSaves } from "@/lib/guest-shares";
 
 export async function registerAction(_state: FormState, formData: FormData): Promise<FormState> {
   if (!config.allowRegistration) return { error: "Registration is disabled." };
@@ -20,7 +21,7 @@ export async function registerAction(_state: FormState, formData: FormData): Pro
   const username = usernameSchema.safeParse(String(formData.get("username") || ""));
   const password = passwordSchema.safeParse(String(formData.get("password") || ""));
   const confirm = String(formData.get("confirm") || "");
-  const next = safeNextPath(formData.get("next"), "/wishlists");
+  const next = safeNextPath(formData.get("next"), "/");
 
   if (!username.success) return { error: username.error.issues[0]?.message };
   if (!password.success) return { error: password.error.issues[0]?.message };
@@ -33,17 +34,24 @@ export async function registerAction(_state: FormState, formData: FormData): Pro
   if (existing) return { error: "That username is already taken." };
 
   const hash = await hashPassword(password.data);
+  let userId: number;
   try {
     const result = db
       .prepare(
         "INSERT INTO users (username, password_hash, default_wishlist_id, notify_enabled, created_at) VALUES (?, ?, NULL, 0, ?)",
       )
       .run(username.data, hash, nowIso());
-    await createSession(Number(result.lastInsertRowid));
+    userId = Number(result.lastInsertRowid);
   } catch {
     return { error: "That username is already taken." };
   }
 
+  try {
+    await migrateGuestWishlistSaves(userId);
+  } catch {
+    // A failed migration should not block account creation.
+  }
+  await createSession(userId);
   redirect(next);
 }
 
@@ -67,6 +75,11 @@ export async function loginAction(_state: FormState, formData: FormData): Promis
     return { error: "Incorrect username or password." };
   }
 
+  try {
+    await migrateGuestWishlistSaves(user.id);
+  } catch {
+    // A failed migration should not block sign-in.
+  }
   await createSession(user.id);
   redirect(next);
 }

@@ -44,10 +44,11 @@ function emptyDefaults(url = ""): ItemFormDefaults {
 
 type Props = {
   wishlistId: number;
+  wishlistSlug: string;
   initialUrl?: string;
 };
 
-export function AddItemFlow({ wishlistId, initialUrl = "" }: Props) {
+export function AddItemFlow({ wishlistId, wishlistSlug, initialUrl = "" }: Props) {
   const [step, setStep] = useState<"url" | "form">("url");
   const [url, setUrl] = useState(initialUrl);
   const [loading, setLoading] = useState(false);
@@ -181,7 +182,7 @@ export function AddItemFlow({ wishlistId, initialUrl = "" }: Props) {
           wishlistId={wishlistId}
           defaults={defaults}
           mode="add"
-          cancelHref={`/w/${wishlistId}`}
+          cancelHref={`/w/${wishlistSlug}`}
         />
       </div>
     );

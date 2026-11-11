@@ -11,6 +11,7 @@ type SortKey = "newest" | "oldest" | "price-asc" | "price-desc" | "domain";
 
 type Props = {
   wishlistId: number;
+  wishlistSlug: string;
   items: Item[];
   canEdit: boolean;
   canClaim: boolean;
@@ -40,6 +41,7 @@ function toCents(value: string): number | null {
 
 export function WishlistItems({
   wishlistId,
+  wishlistSlug,
   items,
   canEdit,
   canClaim,
@@ -224,6 +226,7 @@ export function WishlistItems({
                 key={item.id}
                 item={item}
                 wishlistId={wishlistId}
+                wishlistSlug={wishlistSlug}
                 canEdit={canEdit}
                 canClaim={canClaim}
                 showClaims={showClaims}

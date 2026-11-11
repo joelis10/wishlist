@@ -44,7 +44,11 @@ export default function manifest(): MetadataRoute.Manifest {
     shortcuts: [
       {
         name: "My wishlists",
-        url: "/wishlists",
+        url: "/",
+      },
+      {
+        name: "Shared with me",
+        url: "/shared",
       },
       {
         name: "New wishlist",

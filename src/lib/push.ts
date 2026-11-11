@@ -112,3 +112,14 @@ export async function sendPushToUser(
   }
   return sent;
 }
+
+export async function notifyUserIfEnabled(
+  userId: number,
+  payload: { title: string; body: string; url?: string },
+): Promise<void> {
+  const row = getDb()
+    .prepare("SELECT notify_enabled FROM users WHERE id = ?")
+    .get(userId) as { notify_enabled: number } | undefined;
+  if (!row || !row.notify_enabled) return;
+  await sendPushToUser(userId, payload).catch(() => {});
+}

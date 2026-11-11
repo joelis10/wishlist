@@ -12,12 +12,9 @@ export async function SiteHeader() {
         <div className="flex items-center gap-7">
           <Brand />
           <nav className="flex items-center gap-4 text-[13px] text-muted sm:gap-5 sm:text-sm">
-            <Link href="/" className="hidden transition hover:text-ink sm:inline">
-              Browse
-            </Link>
             {viewer ? (
               <Link
-                href="/wishlists"
+                href="/"
                 className="py-2 transition hover:text-ink"
                 aria-label="My wishlists"
               >
@@ -25,6 +22,14 @@ export async function SiteHeader() {
                 <span className="hidden sm:inline">My wishlists</span>
               </Link>
             ) : null}
+            <Link
+              href="/shared"
+              className="py-2 transition hover:text-ink"
+              aria-label="Shared with me"
+            >
+              <span className="sm:hidden">Shared</span>
+              <span className="hidden sm:inline">Shared with me</span>
+            </Link>
           </nav>
         </div>
 

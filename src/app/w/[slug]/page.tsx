@@ -9,8 +9,10 @@ import { getExchangeRates, getPreferredCurrency } from "@/lib/currency";
 import { endDateLabel } from "@/lib/dates";
 import { absoluteUrl } from "@/lib/env";
 import { listItems } from "@/lib/items";
-import { getWishlist, getWishlistAccess } from "@/lib/wishlists";
+import { getWishlistBySlug, getWishlistAccess } from "@/lib/wishlists";
 import { CalendarIcon, PlusIcon, SettingsIcon, UserIcon } from "@/components/icons";
+import { RememberWishlist } from "@/components/remember-wishlist";
+import { ShareWishlistButton } from "@/components/share-wishlist-button";
 import { ClaimsToggle } from "@/components/claims-toggle";
 import { SpoilerGate } from "@/components/spoiler-gate";
 import { WishlistItems } from "@/components/wishlist-items";
@@ -18,27 +20,13 @@ import { WishlistItems } from "@/components/wishlist-items";
 export const dynamic = "force-dynamic";
 
 type PageProps = {
-  params: Promise<{ id: string }>;
+  params: Promise<{ slug: string }>;
 };
 
-function parseId(value: string): number | null {
-  const id = Number(value);
-  return Number.isInteger(id) && id > 0 ? id : null;
-}
-
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
-  const { id: rawId } = await params;
-  const id = parseId(rawId);
-  if (!id) return { title: "Wishlist" };
-
-  const wishlist = getWishlist(id);
+  const { slug } = await params;
+  const wishlist = getWishlistBySlug(slug);
   if (!wishlist) return { title: "Wishlist" };
-
-  const viewer = await getViewer();
-  const access = getWishlistAccess(id, viewer?.id ?? null);
-  if (!access?.canView) {
-    return { title: "Wishlist", robots: { index: false, follow: false } };
-  }
 
   const description = `${wishlist.itemCount} ${
     wishlist.itemCount === 1 ? "item" : "items"
@@ -48,13 +36,13 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   );
   const image = wishlist.imagePath ? absoluteUrl(wishlist.imagePath) : absoluteUrl("/og-default.png");
   const imageSize = wishlist.imagePath ? { width: 1600, height: 1000 } : { width: 1200, height: 630 };
-  const url = absoluteUrl(`/w/${wishlist.id}`);
+  const url = absoluteUrl(`/w/${wishlist.slug}`);
 
   return {
     title: wishlist.title,
     description,
     alternates: { canonical: url },
-    robots: { index: wishlist.isPublic, follow: wishlist.isPublic },
+    robots: { index: false, follow: false },
     openGraph: {
       type: "website",
       title: wishlist.title,
@@ -73,15 +61,13 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 }
 
 export default async function WishlistPage({ params }: PageProps) {
-  const { id: rawId } = await params;
-  const id = parseId(rawId);
-  if (!id) notFound();
+  const { slug } = await params;
+  const wishlist = getWishlistBySlug(slug);
+  if (!wishlist) notFound();
 
   const viewer = await getViewer();
-  const access = getWishlistAccess(id, viewer?.id ?? null);
-  if (!access?.canView) notFound();
-
-  const wishlist = access.wishlist;
+  const access = getWishlistAccess(wishlist.id, viewer?.id ?? null);
+  if (!access) notFound();
   const items = listItems(wishlist.id);
   const preferredCurrency = await getPreferredCurrency(viewer);
   const rates = getExchangeRates();
@@ -131,14 +117,20 @@ export default async function WishlistPage({ params }: PageProps) {
 
           <div className="flex shrink-0 items-center gap-2">
             {access.canEditItems ? (
-              <Link href={`/w/${wishlist.id}/add`} className="btn btn-primary btn-sm">
+              <Link href={`/w/${wishlist.slug}/add`} className="btn btn-primary btn-sm">
                 <PlusIcon className="size-4" />
                 Add item
               </Link>
             ) : null}
             {access.isOwner ? (
+              <ShareWishlistButton
+                title={wishlist.title}
+                url={absoluteUrl(`/w/${wishlist.slug}`)}
+              />
+            ) : null}
+            {access.isOwner ? (
               <Link
-                href={`/w/${wishlist.id}/settings`}
+                href={`/w/${wishlist.slug}/settings`}
                 className="btn btn-secondary btn-sm"
                 aria-label="Wishlist settings"
               >
@@ -162,7 +154,7 @@ export default async function WishlistPage({ params }: PageProps) {
             </span>
           ) : null}
           {!access.isOwner && claimsMode !== "unknown" ? (
-            <ClaimsToggle wishlistId={wishlist.id} showClaims={showClaims} />
+            <ClaimsToggle wishlistId={wishlist.id} wishlistSlug={wishlist.slug} showClaims={showClaims} />
           ) : null}
         </div>
       </div>
@@ -170,6 +162,7 @@ export default async function WishlistPage({ params }: PageProps) {
       <div className="mt-8 border-t border-line pt-6">
         <WishlistItems
           wishlistId={wishlist.id}
+          wishlistSlug={wishlist.slug}
           items={visibleItems}
           canEdit={access.canEditItems}
           canClaim={canClaim}
@@ -181,7 +174,11 @@ export default async function WishlistPage({ params }: PageProps) {
         />
       </div>
 
-      {claimsMode === "unknown" && !access.isOwner ? <SpoilerGate wishlistId={wishlist.id} /> : null}
+      {!access.isOwner && !access.sharePermission ? (
+        <RememberWishlist slug={wishlist.slug} />
+      ) : null}
+
+      {claimsMode === "unknown" && !access.isOwner ? <SpoilerGate wishlistId={wishlist.id} wishlistSlug={wishlist.slug} /> : null}
     </div>
   );
 }

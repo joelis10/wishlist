@@ -5,9 +5,11 @@ import { claimsCookieName, claimsCookiePath } from "@/lib/claims";
 
 export function ClaimsToggle({
   wishlistId,
+  wishlistSlug,
   showClaims,
 }: {
   wishlistId: number;
+  wishlistSlug: string;
   showClaims: boolean;
 }) {
   const router = useRouter();
@@ -15,7 +17,7 @@ export function ClaimsToggle({
   function toggle() {
     document.cookie = `${claimsCookieName(wishlistId)}=${
       showClaims ? "owner" : "guest"
-    }; path=${claimsCookiePath(wishlistId)}; max-age=${60 * 60 * 24 * 365}; samesite=lax`;
+    }; path=${claimsCookiePath(wishlistSlug)}; max-age=${60 * 60 * 24 * 365}; samesite=lax`;
     router.refresh();
   }
 

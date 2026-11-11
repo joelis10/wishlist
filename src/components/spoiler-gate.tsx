@@ -5,13 +5,19 @@ import { useState } from "react";
 import { claimsCookieName, claimsCookiePath } from "@/lib/claims";
 import { Modal } from "./modal";
 
-export function SpoilerGate({ wishlistId }: { wishlistId: number }) {
+export function SpoilerGate({
+  wishlistId,
+  wishlistSlug,
+}: {
+  wishlistId: number;
+  wishlistSlug: string;
+}) {
   const router = useRouter();
   const [open, setOpen] = useState(true);
 
   function choose(mode: "owner" | "guest") {
     document.cookie = `${claimsCookieName(wishlistId)}=${mode}; path=${claimsCookiePath(
-      wishlistId,
+      wishlistSlug,
     )}; max-age=${60 * 60 * 24 * 365}; samesite=lax`;
     setOpen(false);
     router.refresh();

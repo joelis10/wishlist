@@ -1,20 +1,19 @@
 "use client";
 
 import { useActionState, useEffect, useRef } from "react";
-import { addCollaboratorAction, removeCollaboratorAction } from "@/app/actions/wishlists";
-import type { Collaborator } from "@/lib/wishlists";
+import { removeShareAction, shareWishlistAction } from "@/app/actions/wishlists";
+import type { WishlistShare } from "@/lib/wishlists";
 import { FormMessage } from "./form-message";
 import { SubmitButton } from "./submit-button";
 import { XIcon } from "./icons";
 
 type Props = {
   wishlistId: number;
-  ownerUsername: string;
-  collaborators: Collaborator[];
+  shares: WishlistShare[];
 };
 
-export function CollaboratorManager({ wishlistId, ownerUsername, collaborators }: Props) {
-  const [state, action] = useActionState(addCollaboratorAction, {});
+export function ShareManager({ wishlistId, shares }: Props) {
+  const [state, action] = useActionState(shareWishlistAction, {});
   const formRef = useRef<HTMLFormElement>(null);
 
   useEffect(() => {
@@ -23,20 +22,17 @@ export function CollaboratorManager({ wishlistId, ownerUsername, collaborators }
 
   return (
     <div className="space-y-4">
-      <div className="rounded-xl border border-line bg-raised/50 px-3.5 py-2.5 text-sm">
-        <span className="text-muted">Owner · </span>
-        <span className="font-medium">{ownerUsername}</span>
-      </div>
-
-      {collaborators.length > 0 ? (
+      {shares.length > 0 ? (
         <ul className="divide-y divide-line rounded-xl border border-line">
-          {collaborators.map((person) => (
+          {shares.map((person) => (
             <li key={person.userId} className="flex items-center justify-between gap-3 px-3.5 py-2.5">
-              <div>
-                <p className="text-sm font-medium">{person.username}</p>
-                <p className="text-xs text-muted">Can edit items</p>
+              <div className="min-w-0">
+                <p className="truncate text-sm font-medium">{person.username}</p>
+                <p className="text-xs text-muted">
+                  {person.permission === "edit" ? "Can edit items" : "View only"}
+                </p>
               </div>
-              <form action={removeCollaboratorAction}>
+              <form action={removeShareAction}>
                 <input type="hidden" name="wishlistId" value={wishlistId} />
                 <input type="hidden" name="userId" value={person.userId} />
                 <button
@@ -51,22 +47,26 @@ export function CollaboratorManager({ wishlistId, ownerUsername, collaborators }
           ))}
         </ul>
       ) : (
-        <p className="text-sm text-muted">Nobody else can edit this wishlist yet.</p>
+        <p className="text-sm text-muted">This wishlist has not been shared with anyone directly.</p>
       )}
 
-      <form ref={formRef} action={action} className="flex flex-col gap-2 sm:flex-row">
+      <form ref={formRef} action={action} className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_9rem_auto]">
         <input type="hidden" name="wishlistId" value={wishlistId} />
         <input
           name="username"
           required
           maxLength={32}
-          className="input flex-1"
+          className="input"
           placeholder="Username"
-          aria-label="Username to add"
+          aria-label="Username to share with"
           autoCapitalize="none"
         />
-        <SubmitButton className="btn btn-secondary" pendingText="Adding…">
-          Add editor
+        <select name="permission" className="input" aria-label="Permission" defaultValue="view">
+          <option value="view">View only</option>
+          <option value="edit">Can edit</option>
+        </select>
+        <SubmitButton className="btn btn-secondary" pendingText="Sharing…">
+          Share
         </SubmitButton>
       </form>
       <FormMessage state={state} />

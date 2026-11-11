@@ -2,6 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { DatabaseSync } from "node:sqlite";
 import { config } from "./env";
+import { generateShareSlug, isShareSlug } from "./slugs";
 
 type GlobalWithDb = typeof globalThis & { __wishlistDb?: DatabaseSync };
 
@@ -144,6 +145,71 @@ function migrate(db: DatabaseSync) {
         db.exec("ALTER TABLE users ADD COLUMN theme TEXT NOT NULL DEFAULT 'system';");
       }
       db.exec("PRAGMA user_version = 3;");
+      db.exec("COMMIT");
+      version = 3;
+    } catch (error) {
+      db.exec("ROLLBACK");
+      throw error;
+    }
+  }
+
+  if (version < 4) {
+    db.exec("BEGIN");
+    try {
+      db.exec(`
+        CREATE TABLE IF NOT EXISTS wishlist_shares (
+          wishlist_id INTEGER NOT NULL REFERENCES wishlists(id) ON DELETE CASCADE,
+          user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+          permission TEXT NOT NULL DEFAULT 'view'
+            CHECK (permission IN ('view', 'edit')),
+          created_at TEXT NOT NULL,
+          PRIMARY KEY (wishlist_id, user_id)
+        );
+        CREATE INDEX IF NOT EXISTS wishlist_shares_user ON wishlist_shares(user_id);
+
+        CREATE TABLE IF NOT EXISTS wishlist_saves (
+          wishlist_id INTEGER NOT NULL REFERENCES wishlists(id) ON DELETE CASCADE,
+          user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+          created_at TEXT NOT NULL,
+          PRIMARY KEY (wishlist_id, user_id)
+        );
+        CREATE INDEX IF NOT EXISTS wishlist_saves_user ON wishlist_saves(user_id);
+      `);
+
+      const wishlistColumns = db.prepare("PRAGMA table_info(wishlists)").all() as unknown as {
+        name: string;
+      }[];
+      if (!wishlistColumns.some((column) => column.name === "share_slug")) {
+        db.exec("ALTER TABLE wishlists ADD COLUMN share_slug TEXT;");
+      }
+
+      const rows = db.prepare("SELECT id, share_slug FROM wishlists").all() as unknown as {
+        id: number;
+        share_slug: string | null;
+      }[];
+      const used = new Set(
+        rows
+          .map((row) => row.share_slug)
+          .filter((value): value is string => isShareSlug(value)),
+      );
+      for (const row of rows) {
+        let slug = isShareSlug(row.share_slug) ? row.share_slug : generateShareSlug();
+        while (used.has(slug)) slug = generateShareSlug();
+        used.add(slug);
+        if (slug !== row.share_slug) {
+          db.prepare("UPDATE wishlists SET share_slug = ? WHERE id = ?").run(slug, row.id);
+        }
+      }
+      db.exec(
+        "CREATE UNIQUE INDEX IF NOT EXISTS wishlists_share_slug ON wishlists(share_slug);",
+      );
+
+      db.exec(`
+        INSERT OR IGNORE INTO wishlist_shares (wishlist_id, user_id, permission, created_at)
+        SELECT wishlist_id, user_id, 'edit', created_at FROM wishlist_collaborators;
+      `);
+
+      db.exec("PRAGMA user_version = 4;");
       db.exec("COMMIT");
     } catch (error) {
       db.exec("ROLLBACK");

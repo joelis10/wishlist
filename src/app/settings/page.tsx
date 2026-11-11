@@ -4,7 +4,7 @@ import { logoutAction } from "@/app/actions/auth";
 import { getPreferredCurrency } from "@/lib/currency";
 import { getPublicVapidKey } from "@/lib/push";
 import { getPreferredTheme } from "@/lib/theme";
-import { listMyWishlists } from "@/lib/wishlists";
+import { listEditableWishlists } from "@/lib/wishlists";
 import { LogoutIcon } from "@/components/icons";
 import { CurrencyForm } from "@/components/currency-form";
 import { ThemeForm } from "@/components/theme-form";
@@ -20,7 +20,7 @@ export default async function SettingsPage() {
   const viewer = await getViewer();
   const preferredCurrency = await getPreferredCurrency(viewer);
   const preferredTheme = await getPreferredTheme(viewer);
-  const wishlists = viewer ? listMyWishlists(viewer.id) : [];
+  const wishlists = viewer ? listEditableWishlists(viewer.id) : [];
   const publicKey = viewer ? getPublicVapidKey() : "";
 
   return (
